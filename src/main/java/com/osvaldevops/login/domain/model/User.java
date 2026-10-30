@@ -13,9 +13,10 @@ public class User {
 
     private final UUID id;
     private final String email;
-    private final String passwordHash;
+    private final String password;
+    private final String userName;
     private final String role;
     private final boolean enabled;
     private final Instant createdAt;
+    private final Instant updatedAt;
 }
-

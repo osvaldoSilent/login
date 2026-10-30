@@ -23,7 +23,7 @@ public class AuthenticationDomainService implements AuthenticateUserUseCase {
                 .filter(User::isEnabled)
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
 
-        if (!passwordEncoder.matches(command.rawPassword(), user.getPasswordHash())) {
+        if (!passwordEncoder.matches(command.rawPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("Invalid email or password");
         }
 
@@ -31,4 +31,3 @@ public class AuthenticationDomainService implements AuthenticateUserUseCase {
         return new AuthResult(token, "Bearer", tokenProviderPort.getExpirationMs());
     }
 }
-

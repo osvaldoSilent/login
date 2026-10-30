@@ -43,7 +43,6 @@ replay_pid*
 *.iws
 *.iml
 *.ipr
-out/
 
 # Eclipse / STS
 .apt_generated
