@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: 'postgres:17-alpine'
+    container_name: login-service-postgres
+    environment:
+      POSTGRES_DB: login_db
+      POSTGRES_USER: login_user
+      POSTGRES_PASSWORD: login_secret_password
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U login_user -d login_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+
