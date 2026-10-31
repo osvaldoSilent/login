@@ -112,6 +112,26 @@ class CreateUserDomainServiceTest {
     }
 
     @Test
+    @DisplayName("Should default to ROLE_USER when role is blank")
+    void shouldDefaultToRoleUser_whenRoleIsBlank() {
+        CreateUserCommand command = new CreateUserCommand(
+                "blankrole@osvaldevops.com",
+                "secret123",
+                "osval_blank",
+                "   "
+        );
+
+        when(userRepositoryPort.existsByEmail(command.email())).thenReturn(false);
+        when(passwordEncoder.encode("secret123")).thenReturn("$2a$10$encoded");
+        when(userRepositoryPort.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User created = createUserDomainService.createUser(command);
+
+        assertThat(created.getRole()).isEqualTo("ROLE_USER");
+        verify(userEventPublisherPort).publishUserCreated(any(UserCreatedEvent.class));
+    }
+
+    @Test
     @DisplayName("Should throw UserAlreadyExistsException and not publish event when email is already registered")
     void shouldThrowException_whenEmailAlreadyExists() {
         CreateUserCommand command = new CreateUserCommand(

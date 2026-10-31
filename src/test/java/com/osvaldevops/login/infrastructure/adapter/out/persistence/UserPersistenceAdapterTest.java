@@ -99,6 +99,17 @@ class UserPersistenceAdapterTest {
     }
 
     @Test
+    @DisplayName("Should return false when email does not exist in repository")
+    void shouldReturnFalse_whenEmailDoesNotExist() {
+        when(springDataUserRepository.existsByEmail("nonexistent@osvaldevops.com")).thenReturn(false);
+
+        boolean exists = userPersistenceAdapter.existsByEmail("nonexistent@osvaldevops.com");
+
+        assertThat(exists).isFalse();
+        verify(springDataUserRepository).existsByEmail("nonexistent@osvaldevops.com");
+    }
+
+    @Test
     @DisplayName("Should map domain User to JPA entity, save it, and return mapped domain User")
     void shouldSaveAndReturnDomainUser() {
         when(userPersistenceMapper.toEntity(domainUser)).thenReturn(jpaEntity);

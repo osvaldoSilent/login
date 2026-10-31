@@ -1,6 +1,6 @@
 # Login & User Service (`login-service`)
 
-Servicio de **Autenticación y Registro de Usuarios** construido con **Java 25**, **Spring Boot 3.4.5**, **Arquitectura Hexagonal (Ports & Adapters)**, **Spring Security (Stateless JWT con JJWT)**, **Spring Data JPA**, **Flyway**, **PostgreSQL (Neon / Docker)**, **Apache Kafka** y documentado con **OpenAPI 3 / Swagger UI**.
+Servicio de **Autenticación y Registro de Usuarios** construido con **Java 25**, **Spring Boot 3.4.5**, **Arquitectura Hexagonal (Ports & Adapters)**, **Spring Security (Stateless JWT con JJWT)**, **Spring Data JPA**, **Flyway**, **PostgreSQL (Neon / Docker)**, **Apache Kafka**, documentado con **OpenAPI 3 / Swagger UI**, y asegurado en calidad con **JaCoCo** y **SonarQube**.
 
 ---
 
@@ -16,6 +16,7 @@ Servicio de **Autenticación y Registro de Usuarios** construido con **Java 25**
 | **Mensajería Asíncrona** | Spring for Apache Kafka (`spring-kafka`) |
 | **Mapeo & Boilerplate** | MapStruct `1.6.3` + Lombok |
 | **Documentación API** | SpringDoc OpenAPI `2.8.6` (Swagger UI) |
+| **Calidad & Cobertura** | JaCoCo `0.8.13` (mínimo 80%) + SonarQube Scanner `5.0.0.4389` |
 | **Testing** | JUnit 5, Mockito, AssertJ |
 
 ---
@@ -34,7 +35,9 @@ login-service/
     │   │   │   ├── event/
     │   │   │   │   └── UserCreatedEvent.java
     │   │   │   ├── exception/
+    │   │   │   │   ├── EventPublicationException.java
     │   │   │   │   ├── InvalidCredentialsException.java
+    │   │   │   │   ├── UserAccountDisabledException.java
     │   │   │   │   └── UserAlreadyExistsException.java
     │   │   │   ├── model/
     │   │   │   │   └── User.java
@@ -53,7 +56,8 @@ login-service/
     │   │       ├── adapter/
     │   │       │   ├── in/web/
     │   │       │   │   ├── controller/AuthController.java
-    │   │       │   │   ├── dto/ (LoginRequest, AuthResponse, CreateUserRequest, UserResponse)
+    │   │       │   │   ├── dto/ (LoginRequest, AuthResponse, CreateUserRequest, UserResponse, ApiErrorResponse)
+    │   │       │   │   ├── exception/GlobalExceptionHandler.java
     │   │       │   │   └── mapper/AuthWebMapper.java
     │   │       │   └── out/
     │   │       │       ├── messaging/
@@ -79,7 +83,9 @@ login-service/
             │   ├── AuthenticationDomainServiceTest.java
             │   └── CreateUserDomainServiceTest.java
             └── infrastructure/adapter/
-                ├── in/web/controller/AuthControllerTest.java
+                ├── in/web/
+                │   ├── controller/AuthControllerTest.java
+                │   └── exception/GlobalExceptionHandlerTest.java
                 └── out/
                     ├── messaging/KafkaUserEventPublisherAdapterTest.java
                     ├── persistence/UserPersistenceAdapterTest.java
@@ -110,8 +116,6 @@ Cuando se crea un usuario mediante `POST /api/v1/auth/register`:
   "createdAt": "2026-10-30T19:00:00Z"
 }
 ```
-
-*(Nota: Se configuró `spring.json.add.type.headers: false` para que el microservicio de notificaciones pueda deserializar el JSON directamente en su propio DTO/Record sin acoplarse a los paquetes de `login-service`).*
 
 ### Levantar Kafka localmente con Docker Compose
 ```powershell
@@ -146,18 +150,6 @@ curl -X POST http://localhost:8081/api/v1/auth/register `
   }'
 ```
 
-**Response (`201 Created`):**
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "email": "osval@osvaldevops.com",
-  "userName": "osval",
-  "role": "ROLE_USER",
-  "enabled": true,
-  "createdAt": "2026-10-30T18:30:00Z"
-}
-```
-
 ### 5.2 Iniciar sesión (`POST /api/v1/auth/login`)
 
 **Request:**
@@ -170,44 +162,31 @@ curl -X POST http://localhost:8081/api/v1/auth/login `
   }'
 ```
 
-**Response (`200 OK`):**
-```json
-{
-  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
-  "tokenType": "Bearer",
-  "expiresInMs": 3600000
-}
-```
-
 ---
 
-## 6. Esquema de Base de Datos (`users`)
+## 6. Cobertura de Código (JaCoCo) y Análisis Estático (SonarQube)
 
-| Columna | Tipo | Descripción |
-| :--- | :--- | :--- |
-| `id` | `UUID` (PK) | Identificador único del usuario |
-| `email` | `VARCHAR(255)` (UNIQUE) | Correo electrónico |
-| `password` | `VARCHAR(255)` | Hash BCrypt de la contraseña |
-| `user_name` | `VARCHAR(255)` | Nombre de usuario |
-| `role` | `VARCHAR(50)` | Rol asignado (por defecto `ROLE_USER`) |
-| `enabled` | `BOOLEAN` | Estado de la cuenta (`true` / `false`) |
-| `created_at` | `TIMESTAMPTZ` | Fecha de creación |
-| `updated_at` | `TIMESTAMPTZ` | Fecha de última actualización |
+### 6.1 Generar el reporte de cobertura con JaCoCo
+Al ejecutar las pruebas unitarias, **JaCoCo** genera automáticamente los reportes HTML y XML:
 
----
-
-## 7. Ejecución y Pruebas Unitarias
-
-### Ejecutar la aplicación
-Desde VS Code (**Run/Debug** sobre `LoginServiceApplication`) o con Maven:
 ```powershell
 cd login-service
-./mvnw spring-boot:run
+./mvnw clean test
 ```
+- **Reporte visual HTML:** `login-service/target/site/jacoco/index.html`
+- **Reporte XML (para SonarQube):** `login-service/target/site/jacoco/jacoco.xml`
+- **Verificar umbral mínimo de cobertura (80%):**
+  ```powershell
+  ./mvnw verify
+  ```
 
-### Ejecutar las pruebas unitarias
-Puedes ejecutar todas las suites de pruebas desde el panel **Testing** de VS Code o por línea de comandos:
-```powershell
-cd login-service
-./mvnw test
-```
+### 6.2 Ejecutar SonarQube localmente y enviar el análisis
+1. Levanta el contenedor de **SonarQube Community** incluido en `compose.yaml`:
+   ```powershell
+   cd login-service
+   docker compose up -d sonarqube
+   ```
+2. Abre http://localhost:9000 en tu navegador (credenciales iniciales: `admin` / `admin`), genera un token de proyecto y ejecuta:
+   ```powershell
+   ./mvnw clean verify sonar:sonar "-Dsonar.token=TU_TOKEN_DE_SONARQUBE"
+   ```
