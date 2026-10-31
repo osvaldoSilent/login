@@ -14,6 +14,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * JPA entity mapped to the {@code users} table in PostgreSQL.
+ */
 @Entity
 @Table(name = "users")
 @Getter

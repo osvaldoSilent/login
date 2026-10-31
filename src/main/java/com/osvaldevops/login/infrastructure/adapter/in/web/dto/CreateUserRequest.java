@@ -5,6 +5,9 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Request DTO for registering a new user account via {@code POST /api/v1/auth/register}.
+ */
 @Schema(description = "Request payload for registering a new user account")
 public record CreateUserRequest(
         @Schema(description = "Unique email address for the new user", example = "osval@osvaldevops.com")

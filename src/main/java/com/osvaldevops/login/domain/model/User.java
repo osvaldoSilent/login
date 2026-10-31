@@ -6,6 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
+/**
+ * Core domain model representing a registered user within the system.
+ */
 @Getter
 @Builder
 @AllArgsConstructor

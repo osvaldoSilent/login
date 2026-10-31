@@ -10,10 +10,17 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
+/**
+ * Spring Security configuration enforcing stateless session management and public access
+ * for authentication, actuator health, and Swagger UI / OpenAPI endpoints.
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    /**
+     * Configures the HTTP security filter chain for stateless REST endpoints.
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
@@ -33,6 +40,9 @@ public class SecurityConfig {
                 .build();
     }
 
+    /**
+     * Provides the BCrypt password encoder used for hashing and verifying user passwords.
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

@@ -21,10 +21,17 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * Centralized REST exception handler translating domain, validation, persistence,
+ * and messaging exceptions into standardized {@link ApiErrorResponse} payloads.
+ */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * Handles authentication failures due to invalid email or password ({@code 401 Unauthorized}).
+     */
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidCredentials(
             InvalidCredentialsException ex,
@@ -33,6 +40,9 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request.getRequestURI(), null);
     }
 
+    /**
+     * Handles authentication attempts on disabled user accounts ({@code 403 Forbidden}).
+     */
     @ExceptionHandler(UserAccountDisabledException.class)
     public ResponseEntity<ApiErrorResponse> handleUserAccountDisabled(
             UserAccountDisabledException ex,
@@ -41,6 +51,9 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI(), null);
     }
 
+    /**
+     * Handles duplicate user registration attempts ({@code 409 Conflict}).
+     */
     @ExceptionHandler(UserAlreadyExistsException.class)
     public ResponseEntity<ApiErrorResponse> handleUserAlreadyExists(
             UserAlreadyExistsException ex,
@@ -49,11 +62,15 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI(), null);
     }
 
+    /**
+     * Handles Bean Validation failures on incoming request bodies ({@code 400 Bad Request}).
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleValidationErrors(
             MethodArgumentNotValidException ex,
             HttpServletRequest request
     ) {
+        // Collect the first validation message per invalid field
         Map<String, String> fieldErrors = new LinkedHashMap<>();
         for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
             fieldErrors.putIfAbsent(fieldError.getField(), fieldError.getDefaultMessage());
@@ -66,6 +83,9 @@ public class GlobalExceptionHandler {
         );
     }
 
+    /**
+     * Handles unreadable or malformed JSON payloads ({@code 400 Bad Request}).
+     */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiErrorResponse> handleMalformedJson(
             HttpMessageNotReadableException ex,
@@ -79,6 +99,9 @@ public class GlobalExceptionHandler {
         );
     }
 
+    /**
+     * Handles database unique or foreign key constraint violations ({@code 409 Conflict}).
+     */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiErrorResponse> handleDataIntegrityViolation(
             DataIntegrityViolationException ex,
@@ -93,6 +116,9 @@ public class GlobalExceptionHandler {
         );
     }
 
+    /**
+     * Handles database connectivity or query timeout failures ({@code 503 Service Unavailable}).
+     */
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<ApiErrorResponse> handleDatabaseAccessException(
             DataAccessException ex,
@@ -107,6 +133,9 @@ public class GlobalExceptionHandler {
         );
     }
 
+    /**
+     * Handles Kafka event publication failures ({@code 503 Service Unavailable}).
+     */
     @ExceptionHandler({EventPublicationException.class, KafkaException.class})
     public ResponseEntity<ApiErrorResponse> handleMessagingException(
             RuntimeException ex,
@@ -121,6 +150,9 @@ public class GlobalExceptionHandler {
         );
     }
 
+    /**
+     * Fallback handler for any unhandled runtime or checked exceptions ({@code 500 Internal Server Error}).
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleUnexpectedException(
             Exception ex,
@@ -135,6 +167,9 @@ public class GlobalExceptionHandler {
         );
     }
 
+    /**
+     * Builds a standardized {@link ResponseEntity} wrapping an {@link ApiErrorResponse}.
+     */
     private ResponseEntity<ApiErrorResponse> buildResponse(
             HttpStatus status,
             String message,
@@ -152,4 +187,3 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(body);
     }
 }
-

@@ -9,6 +9,10 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+/**
+ * Outbound persistence adapter implementing {@link UserRepositoryPort} using Spring Data JPA
+ * and PostgreSQL.
+ */
 @Component
 @RequiredArgsConstructor
 public class UserPersistenceAdapter implements UserRepositoryPort {
@@ -16,17 +20,26 @@ public class UserPersistenceAdapter implements UserRepositoryPort {
     private final SpringDataUserRepository springDataUserRepository;
     private final UserPersistenceMapper userPersistenceMapper;
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Optional<User> findByEmail(String email) {
         return springDataUserRepository.findByEmail(email)
                 .map(userPersistenceMapper::toDomain);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean existsByEmail(String email) {
         return springDataUserRepository.existsByEmail(email);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public User save(User user) {
         UserJpaEntity saved = springDataUserRepository.save(userPersistenceMapper.toEntity(user));

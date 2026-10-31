@@ -21,7 +21,7 @@ logs/
 *.tar.gz
 *.rar
 
-# virtual machine crash logs
+# Virtual machine crash logs
 hs_err_pid*
 replay_pid*
 
@@ -29,6 +29,16 @@ replay_pid*
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+
+# Code Coverage & Static Analysis (JaCoCo & SonarQube)
+.scannerwork/
+.sonar/
+jacoco.exec
+**/jacoco.exec
+
+# AI & Agent Configurations
+.antigravity/
+.gemini/
 
 # VS Code
 .vscode/
@@ -58,6 +68,8 @@ bin/
 .env
 .env.*
 application-local.yml
+src/main/resources/application-dev.yml
+src/main/resources/application.yml
 
 # OS Generated
 .DS_Store

@@ -5,6 +5,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.Map;
 
+/**
+ * Standardized REST API error response DTO returned by {@code GlobalExceptionHandler}.
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(description = "Standardized error response payload")
 public record ApiErrorResponse(
@@ -26,4 +29,3 @@ public record ApiErrorResponse(
         @Schema(description = "Field-level validation errors (present only on 400 validation errors)")
         Map<String, String> validationErrors
 ) {}
-

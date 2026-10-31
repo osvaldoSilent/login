@@ -6,9 +6,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
 
+/**
+ * Apache Kafka topic configuration for user lifecycle events.
+ */
 @Configuration
 public class KafkaTopicConfig {
 
+    /**
+     * Declares the Kafka topic used to publish {@code UserCreatedEvent} messages.
+     */
     @Bean
     public NewTopic userCreatedTopic(
             @Value("${app.kafka.topics.user-created:user-created-events}") String topicName
@@ -19,4 +25,3 @@ public class KafkaTopicConfig {
                 .build();
     }
 }
-

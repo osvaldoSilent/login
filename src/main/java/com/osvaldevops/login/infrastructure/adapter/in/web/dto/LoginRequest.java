@@ -4,6 +4,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
+/**
+ * Request DTO for authenticating an existing user via {@code POST /api/v1/auth/login}.
+ */
 @Schema(description = "Request payload for user authentication")
 public record LoginRequest(
         @Schema(description = "Registered email address of the user", example = "osval@osvaldevops.com")

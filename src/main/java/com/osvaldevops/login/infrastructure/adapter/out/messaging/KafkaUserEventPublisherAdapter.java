@@ -8,6 +8,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+/**
+ * Outbound messaging adapter implementing {@link UserEventPublisherPort} to publish
+ * {@link UserCreatedEvent} messages to Apache Kafka.
+ */
 @Slf4j
 @Component
 public class KafkaUserEventPublisherAdapter implements UserEventPublisherPort {
@@ -23,8 +27,12 @@ public class KafkaUserEventPublisherAdapter implements UserEventPublisherPort {
         this.userCreatedTopic = userCreatedTopic;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void publishUserCreated(UserCreatedEvent event) {
+        // Use userId as the Kafka partition key, falling back to email if userId is null
         String key = event.userId() != null ? event.userId().toString() : event.email();
 
         try {
@@ -35,11 +43,11 @@ public class KafkaUserEventPublisherAdapter implements UserEventPublisherPort {
                                     event.email(), userCreatedTopic, ex);
                         } else {
                             log.info("Published UserCreatedEvent for userId={} email={} to topic={} partition={} offset={}",
-                                    event.userId(),
-                                    event.email(),
-                                    userCreatedTopic,
-                                    result.getRecordMetadata().partition(),
-                                    result.getRecordMetadata().offset());
+                                     event.userId(),
+                                     event.email(),
+                                     userCreatedTopic,
+                                     result.getRecordMetadata().partition(),
+                                     result.getRecordMetadata().offset());
                         }
                     });
         } catch (RuntimeException ex) {

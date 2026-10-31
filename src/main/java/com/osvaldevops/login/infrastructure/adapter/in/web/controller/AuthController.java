@@ -25,6 +25,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Inbound REST controller exposing authentication and user registration endpoints.
+ */
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -35,6 +38,12 @@ public class AuthController {
     private final CreateUserUseCase createUserUseCase;
     private final AuthWebMapper authWebMapper;
 
+    /**
+     * Authenticates a user by email and password and returns a signed Bearer JWT token.
+     *
+     * @param request validated login request payload
+     * @return {@code 200 OK} with {@link AuthResponse} containing the signed JWT token
+     */
     @Operation(
             summary = "Authenticate user and generate JWT",
             description = "Validates user email and password against PostgreSQL and returns a signed Bearer JWT token."
@@ -72,6 +81,12 @@ public class AuthController {
         return ResponseEntity.ok(authWebMapper.toResponse(result));
     }
 
+    /**
+     * Registers a new user account in PostgreSQL and publishes a {@code UserCreatedEvent} to Kafka.
+     *
+     * @param request validated user registration request payload
+     * @return {@code 201 Created} with {@link UserResponse} representing the newly created user
+     */
     @Operation(
             summary = "Register a new user",
             description = "Creates a new user account with a BCrypt-hashed password in PostgreSQL and publishes a UserCreatedEvent to Kafka."
