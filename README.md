@@ -1,6 +1,6 @@
 # Login & User Service (`login-service`)
 
-Servicio de **Autenticación y Registro de Usuarios** construido con **Java 25**, **Spring Boot 3.4.5**, **Arquitectura Hexagonal (Ports & Adapters)**, **Spring Security (Stateless JWT con JJWT)**, **Spring Data JPA**, **Flyway**, **PostgreSQL (Neon / Docker)** y documentado con **OpenAPI 3 / Swagger UI**.
+Servicio de **Autenticación y Registro de Usuarios** construido con **Java 25**, **Spring Boot 3.4.5**, **Arquitectura Hexagonal (Ports & Adapters)**, **Spring Security (Stateless JWT con JJWT)**, **Spring Data JPA**, **Flyway**, **PostgreSQL (Neon / Docker)**, **Apache Kafka** y documentado con **OpenAPI 3 / Swagger UI**.
 
 ---
 
@@ -13,6 +13,7 @@ Servicio de **Autenticación y Registro de Usuarios** construido con **Java 25**
 | **Spring Security** | 6.x (Stateless + `BCryptPasswordEncoder`) |
 | **JWT** | `io.jsonwebtoken:jjwt` `0.12.6` (HMAC-SHA256) |
 | **Persistencia** | Spring Data JPA (Hibernate) + PostgreSQL + Flyway |
+| **Mensajería Asíncrona** | Spring for Apache Kafka (`spring-kafka`) |
 | **Mapeo & Boilerplate** | MapStruct `1.6.3` + Lombok |
 | **Documentación API** | SpringDoc OpenAPI `2.8.6` (Swagger UI) |
 | **Testing** | JUnit 5, Mockito, AssertJ |
@@ -30,6 +31,8 @@ login-service/
     │   ├── java/com/osvaldevops/login/
     │   │   ├── LoginServiceApplication.java
     │   │   ├── domain/
+    │   │   │   ├── event/
+    │   │   │   │   └── UserCreatedEvent.java
     │   │   │   ├── exception/
     │   │   │   │   ├── InvalidCredentialsException.java
     │   │   │   │   └── UserAlreadyExistsException.java
@@ -41,6 +44,7 @@ login-service/
     │   │   │   │   │   └── CreateUserUseCase.java
     │   │   │   │   └── out/
     │   │   │   │       ├── TokenProviderPort.java
+    │   │   │   │       ├── UserEventPublisherPort.java
     │   │   │   │       └── UserRepositoryPort.java
     │   │   │   └── service/
     │   │   │       ├── AuthenticationDomainService.java
@@ -52,6 +56,8 @@ login-service/
     │   │       │   │   ├── dto/ (LoginRequest, AuthResponse, CreateUserRequest, UserResponse)
     │   │       │   │   └── mapper/AuthWebMapper.java
     │   │       │   └── out/
+    │   │       │       ├── messaging/
+    │   │       │       │   └── KafkaUserEventPublisherAdapter.java
     │   │       │       ├── persistence/
     │   │       │       │   ├── UserPersistenceAdapter.java
     │   │       │       │   ├── entity/UserJpaEntity.java
@@ -59,6 +65,7 @@ login-service/
     │   │       │       │   └── repository/SpringDataUserRepository.java
     │   │       │       └── security/JwtTokenAdapter.java
     │   │       └── config/
+    │   │           ├── KafkaTopicConfig.java
     │   │           ├── OpenApiConfig.java
     │   │           └── SecurityConfig.java
     │   └── resources/
@@ -74,13 +81,47 @@ login-service/
             └── infrastructure/adapter/
                 ├── in/web/controller/AuthControllerTest.java
                 └── out/
+                    ├── messaging/KafkaUserEventPublisherAdapterTest.java
                     ├── persistence/UserPersistenceAdapterTest.java
                     └── security/JwtTokenAdapterTest.java
 ```
 
 ---
 
-## 3. Documentación Interactiva con Swagger UI / OpenAPI
+## 3. Integración con Apache Kafka (Eventos para Notificaciones)
+
+Cuando se crea un usuario mediante `POST /api/v1/auth/register`:
+1. [`CreateUserDomainService`](src/main/java/com/osvaldevops/login/domain/service/CreateUserDomainService.java) guarda el usuario en PostgreSQL.
+2. Publica un evento [`UserCreatedEvent`](src/main/java/com/osvaldevops/login/domain/event/UserCreatedEvent.java) a través del puerto de salida [`UserEventPublisherPort`](src/main/java/com/osvaldevops/login/domain/port/out/UserEventPublisherPort.java).
+3. El adaptador [`KafkaUserEventPublisherAdapter`](src/main/java/com/osvaldevops/login/infrastructure/adapter/out/messaging/KafkaUserEventPublisherAdapter.java) envía el mensaje en formato JSON al topic de Kafka para que la **API de Notificaciones** lo consuma.
+
+### Configuración del Topic y Contrato del Mensaje
+- **Broker por defecto:** `localhost:9092` (configurable vía `KAFKA_BOOTSTRAP_SERVERS`)
+- **Topic:** `user-created-events` (configurable vía `KAFKA_USER_CREATED_TOPIC`)
+- **Key del mensaje:** `userId` (`String`)
+- **Payload JSON enviado al topic:**
+
+```json
+{
+  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "email": "osval@osvaldevops.com",
+  "userName": "osval",
+  "role": "ROLE_USER",
+  "createdAt": "2026-10-30T19:00:00Z"
+}
+```
+
+*(Nota: Se configuró `spring.json.add.type.headers: false` para que el microservicio de notificaciones pueda deserializar el JSON directamente en su propio DTO/Record sin acoplarse a los paquetes de `login-service`).*
+
+### Levantar Kafka localmente con Docker Compose
+```powershell
+cd login-service
+docker compose up -d kafka
+```
+
+---
+
+## 4. Documentación Interactiva con Swagger UI / OpenAPI
 
 Con la aplicación en ejecución (puerto `8081`), puedes explorar y probar todos los endpoints desde tu navegador:
 
@@ -89,9 +130,9 @@ Con la aplicación en ejecución (puerto `8081`), puedes explorar y probar todos
 
 ---
 
-## 4. Endpoints Principales
+## 5. Endpoints Principales
 
-### 4.1 Registrar un nuevo usuario (`POST /api/v1/auth/register`)
+### 5.1 Registrar un nuevo usuario (`POST /api/v1/auth/register`)
 
 **Request:**
 ```powershell
@@ -117,7 +158,7 @@ curl -X POST http://localhost:8081/api/v1/auth/register `
 }
 ```
 
-### 4.2 Iniciar sesión (`POST /api/v1/auth/login`)
+### 5.2 Iniciar sesión (`POST /api/v1/auth/login`)
 
 **Request:**
 ```powershell
@@ -140,7 +181,7 @@ curl -X POST http://localhost:8081/api/v1/auth/login `
 
 ---
 
-## 5. Esquema de Base de Datos (`users`)
+## 6. Esquema de Base de Datos (`users`)
 
 | Columna | Tipo | Descripción |
 | :--- | :--- | :--- |
@@ -155,7 +196,7 @@ curl -X POST http://localhost:8081/api/v1/auth/login `
 
 ---
 
-## 6. Ejecución y Pruebas Unitarias
+## 7. Ejecución y Pruebas Unitarias
 
 ### Ejecutar la aplicación
 Desde VS Code (**Run/Debug** sobre `LoginServiceApplication`) o con Maven:

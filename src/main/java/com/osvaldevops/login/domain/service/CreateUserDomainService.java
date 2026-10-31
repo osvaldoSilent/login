@@ -1,8 +1,10 @@
 package com.osvaldevops.login.domain.service;
 
+import com.osvaldevops.login.domain.event.UserCreatedEvent;
 import com.osvaldevops.login.domain.exception.UserAlreadyExistsException;
 import com.osvaldevops.login.domain.model.User;
 import com.osvaldevops.login.domain.port.in.CreateUserUseCase;
+import com.osvaldevops.login.domain.port.out.UserEventPublisherPort;
 import com.osvaldevops.login.domain.port.out.UserRepositoryPort;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ public class CreateUserDomainService implements CreateUserUseCase {
 
     private final UserRepositoryPort userRepositoryPort;
     private final PasswordEncoder passwordEncoder;
+    private final UserEventPublisherPort userEventPublisherPort;
 
     @Override
     @Transactional
@@ -41,7 +44,17 @@ public class CreateUserDomainService implements CreateUserUseCase {
                 .updatedAt(now)
                 .build();
 
-        return userRepositoryPort.save(newUser);
+        User savedUser = userRepositoryPort.save(newUser);
+
+        UserCreatedEvent event = new UserCreatedEvent(
+                savedUser.getId(),
+                savedUser.getEmail(),
+                savedUser.getUserName(),
+                savedUser.getRole(),
+                savedUser.getCreatedAt()
+        );
+        userEventPublisherPort.publishUserCreated(event);
+
+        return savedUser;
     }
 }
-

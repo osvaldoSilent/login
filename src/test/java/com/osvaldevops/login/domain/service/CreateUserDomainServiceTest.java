@@ -7,11 +7,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.osvaldevops.login.domain.event.UserCreatedEvent;
 import com.osvaldevops.login.domain.exception.UserAlreadyExistsException;
 import com.osvaldevops.login.domain.model.User;
 import com.osvaldevops.login.domain.port.in.CreateUserUseCase.CreateUserCommand;
+import com.osvaldevops.login.domain.port.out.UserEventPublisherPort;
 import com.osvaldevops.login.domain.port.out.UserRepositoryPort;
-import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,12 +32,15 @@ class CreateUserDomainServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private UserEventPublisherPort userEventPublisherPort;
+
     @InjectMocks
     private CreateUserDomainService createUserDomainService;
 
     @Test
-    @DisplayName("Should create user with encoded password and default role when role is null")
-    void shouldCreateUserWithDefaultRole_whenEmailDoesNotExist() {
+    @DisplayName("Should create user, save to DB, and publish UserCreatedEvent when email does not exist")
+    void shouldCreateUserAndPublishEvent_whenEmailDoesNotExist() {
         CreateUserCommand command = new CreateUserCommand(
                 "newuser@osvaldevops.com",
                 "rawSecret123",
@@ -74,12 +78,19 @@ class CreateUserDomainServiceTest {
         assertThat(capturedUser.isEnabled()).isTrue();
         assertThat(capturedUser.getCreatedAt()).isNotNull();
 
-        assertThat(created.getId()).isEqualTo(generatedId);
-        assertThat(created.getRole()).isEqualTo("ROLE_USER");
+        ArgumentCaptor<UserCreatedEvent> eventCaptor = ArgumentCaptor.forClass(UserCreatedEvent.class);
+        verify(userEventPublisherPort).publishUserCreated(eventCaptor.capture());
+        UserCreatedEvent publishedEvent = eventCaptor.getValue();
+
+        assertThat(publishedEvent.userId()).isEqualTo(generatedId);
+        assertThat(publishedEvent.email()).isEqualTo("newuser@osvaldevops.com");
+        assertThat(publishedEvent.userName()).isEqualTo("osval_new");
+        assertThat(publishedEvent.role()).isEqualTo("ROLE_USER");
+        assertThat(publishedEvent.createdAt()).isEqualTo(created.getCreatedAt());
     }
 
     @Test
-    @DisplayName("Should create user with custom role when provided")
+    @DisplayName("Should create user with custom role and publish event when role is provided")
     void shouldCreateUserWithCustomRole_whenRoleIsProvided() {
         CreateUserCommand command = new CreateUserCommand(
                 "admin@osvaldevops.com",
@@ -97,10 +108,11 @@ class CreateUserDomainServiceTest {
         assertThat(created.getRole()).isEqualTo("ROLE_ADMIN");
         assertThat(created.getUserName()).isEqualTo("osval_admin");
         assertThat(created.isEnabled()).isTrue();
+        verify(userEventPublisherPort).publishUserCreated(any(UserCreatedEvent.class));
     }
 
     @Test
-    @DisplayName("Should throw UserAlreadyExistsException when email is already registered")
+    @DisplayName("Should throw UserAlreadyExistsException and not publish event when email is already registered")
     void shouldThrowException_whenEmailAlreadyExists() {
         CreateUserCommand command = new CreateUserCommand(
                 "existing@osvaldevops.com",
@@ -117,6 +129,6 @@ class CreateUserDomainServiceTest {
 
         verify(passwordEncoder, never()).encode(any());
         verify(userRepositoryPort, never()).save(any());
+        verify(userEventPublisherPort, never()).publishUserCreated(any());
     }
 }
-
