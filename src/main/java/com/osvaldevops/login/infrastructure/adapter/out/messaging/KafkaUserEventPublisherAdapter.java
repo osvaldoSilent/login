@@ -1,6 +1,7 @@
 package com.osvaldevops.login.infrastructure.adapter.out.messaging;
 
 import com.osvaldevops.login.domain.event.UserCreatedEvent;
+import com.osvaldevops.login.domain.exception.EventPublicationException;
 import com.osvaldevops.login.domain.port.out.UserEventPublisherPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,20 +27,23 @@ public class KafkaUserEventPublisherAdapter implements UserEventPublisherPort {
     public void publishUserCreated(UserCreatedEvent event) {
         String key = event.userId() != null ? event.userId().toString() : event.email();
 
-        kafkaTemplate.send(userCreatedTopic, key, event)
-                .whenComplete((result, ex) -> {
-                    if (ex != null) {
-                        log.error("Failed to publish UserCreatedEvent for email={} to topic={}",
-                                event.email(), userCreatedTopic, ex);
-                    } else {
-                        log.info("Published UserCreatedEvent for userId={} email={} to topic={} partition={} offset={}",
-                                event.userId(),
-                                event.email(),
-                                userCreatedTopic,
-                                result.getRecordMetadata().partition(),
-                                result.getRecordMetadata().offset());
-                    }
-                });
+        try {
+            kafkaTemplate.send(userCreatedTopic, key, event)
+                    .whenComplete((result, ex) -> {
+                        if (ex != null) {
+                            log.error("Failed to publish UserCreatedEvent for email={} to topic={}",
+                                    event.email(), userCreatedTopic, ex);
+                        } else {
+                            log.info("Published UserCreatedEvent for userId={} email={} to topic={} partition={} offset={}",
+                                    event.userId(),
+                                    event.email(),
+                                    userCreatedTopic,
+                                    result.getRecordMetadata().partition(),
+                                    result.getRecordMetadata().offset());
+                        }
+                    });
+        } catch (RuntimeException ex) {
+            throw new EventPublicationException("Error publishing UserCreatedEvent to Kafka", ex);
+        }
     }
 }
-

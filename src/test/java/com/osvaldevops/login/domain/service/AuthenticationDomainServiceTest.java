@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.osvaldevops.login.domain.exception.InvalidCredentialsException;
+import com.osvaldevops.login.domain.exception.UserAccountDisabledException;
 import com.osvaldevops.login.domain.model.User;
 import com.osvaldevops.login.domain.port.in.AuthenticateUserUseCase.AuthResult;
 import com.osvaldevops.login.domain.port.in.AuthenticateUserUseCase.LoginCommand;
@@ -94,7 +95,7 @@ class AuthenticationDomainServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw InvalidCredentialsException when user account is disabled")
+    @DisplayName("Should throw UserAccountDisabledException when user account is disabled")
     void shouldThrowException_whenUserIsDisabled() {
         User disabledUser = User.builder()
                 .id(UUID.randomUUID())
@@ -110,8 +111,8 @@ class AuthenticationDomainServiceTest {
         when(userRepositoryPort.findByEmail(command.email())).thenReturn(Optional.of(disabledUser));
 
         assertThatThrownBy(() -> authenticationDomainService.authenticate(command))
-                .isInstanceOf(InvalidCredentialsException.class)
-                .hasMessage("Invalid email or password");
+                .isInstanceOf(UserAccountDisabledException.class)
+                .hasMessage("User account is disabled");
 
         verify(passwordEncoder, never()).matches(any(), any());
         verify(tokenProviderPort, never()).generateToken(any());
@@ -132,4 +133,3 @@ class AuthenticationDomainServiceTest {
         verify(tokenProviderPort, never()).generateToken(any());
     }
 }
-

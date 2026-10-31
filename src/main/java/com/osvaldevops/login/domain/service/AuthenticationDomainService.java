@@ -1,6 +1,7 @@
 package com.osvaldevops.login.domain.service;
 
 import com.osvaldevops.login.domain.exception.InvalidCredentialsException;
+import com.osvaldevops.login.domain.exception.UserAccountDisabledException;
 import com.osvaldevops.login.domain.model.User;
 import com.osvaldevops.login.domain.port.in.AuthenticateUserUseCase;
 import com.osvaldevops.login.domain.port.out.TokenProviderPort;
@@ -20,8 +21,11 @@ public class AuthenticationDomainService implements AuthenticateUserUseCase {
     @Override
     public AuthResult authenticate(LoginCommand command) {
         User user = userRepositoryPort.findByEmail(command.email())
-                .filter(User::isEnabled)
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
+
+        if (!user.isEnabled()) {
+            throw new UserAccountDisabledException("User account is disabled");
+        }
 
         if (!passwordEncoder.matches(command.rawPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("Invalid email or password");

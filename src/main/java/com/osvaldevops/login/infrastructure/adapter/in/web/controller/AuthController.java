@@ -4,6 +4,7 @@ import com.osvaldevops.login.domain.model.User;
 import com.osvaldevops.login.domain.port.in.AuthenticateUserUseCase;
 import com.osvaldevops.login.domain.port.in.AuthenticateUserUseCase.AuthResult;
 import com.osvaldevops.login.domain.port.in.CreateUserUseCase;
+import com.osvaldevops.login.infrastructure.adapter.in.web.dto.ApiErrorResponse;
 import com.osvaldevops.login.infrastructure.adapter.in.web.dto.AuthResponse;
 import com.osvaldevops.login.infrastructure.adapter.in.web.dto.CreateUserRequest;
 import com.osvaldevops.login.infrastructure.adapter.in.web.dto.LoginRequest;
@@ -44,8 +45,26 @@ public class AuthController {
                     description = "Successfully authenticated",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = AuthResponse.class))
             ),
-            @ApiResponse(responseCode = "400", description = "Validation error in request payload", content = @Content),
-            @ApiResponse(responseCode = "401", description = "Invalid email or password", content = @Content)
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Validation error or malformed JSON",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Invalid email or password",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "User account is disabled",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "503",
+                    description = "Database unavailable",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class))
+            )
     })
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
@@ -55,7 +74,7 @@ public class AuthController {
 
     @Operation(
             summary = "Register a new user",
-            description = "Creates a new user account with a BCrypt-hashed password in PostgreSQL."
+            description = "Creates a new user account with a BCrypt-hashed password in PostgreSQL and publishes a UserCreatedEvent to Kafka."
     )
     @ApiResponses({
             @ApiResponse(
@@ -63,8 +82,21 @@ public class AuthController {
                     description = "User successfully created",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class))
             ),
-            @ApiResponse(responseCode = "400", description = "Validation error in request payload", content = @Content),
-            @ApiResponse(responseCode = "409", description = "User with the given email already exists", content = @Content)
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Validation error or malformed JSON",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "User with the given email already exists",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "503",
+                    description = "Database or Kafka messaging unavailable",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class))
+            )
     })
     @PostMapping("/register")
     public ResponseEntity<UserResponse> register(@Valid @RequestBody CreateUserRequest request) {
