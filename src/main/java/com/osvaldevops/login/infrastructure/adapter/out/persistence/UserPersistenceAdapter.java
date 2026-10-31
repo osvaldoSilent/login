@@ -23,9 +23,13 @@ public class UserPersistenceAdapter implements UserRepositoryPort {
     }
 
     @Override
+    public boolean existsByEmail(String email) {
+        return springDataUserRepository.existsByEmail(email);
+    }
+
+    @Override
     public User save(User user) {
         UserJpaEntity saved = springDataUserRepository.save(userPersistenceMapper.toEntity(user));
         return userPersistenceMapper.toDomain(saved);
     }
 }
-
