@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import com.osvaldevops.login.domain.event.UserCreatedEvent;
 import com.osvaldevops.login.domain.exception.EventPublicationException;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -54,11 +55,11 @@ class KafkaUserEventPublisherAdapterTest {
         when(sendResult.getRecordMetadata()).thenReturn(metadata);
 
         CompletableFuture<SendResult<String, UserCreatedEvent>> future = CompletableFuture.completedFuture(sendResult);
-        when(kafkaTemplate.send(TOPIC, userId.toString(), event)).thenReturn(future);
+        when(kafkaTemplate.send(TOPIC, Objects.requireNonNull(userId.toString()), event)).thenReturn(future);
 
         adapter.publishUserCreated(event);
 
-        verify(kafkaTemplate).send(TOPIC, userId.toString(), event);
+        verify(kafkaTemplate).send(TOPIC, Objects.requireNonNull(userId.toString()), event);
     }
 
     @Test
@@ -93,7 +94,7 @@ class KafkaUserEventPublisherAdapterTest {
                 Instant.now()
         );
 
-        when(kafkaTemplate.send(TOPIC, userId.toString(), event))
+        when(kafkaTemplate.send(TOPIC, Objects.requireNonNull(userId.toString()), event))
                 .thenThrow(new RuntimeException("Kafka producer closed"));
 
         assertThatThrownBy(() -> adapter.publishUserCreated(event))
