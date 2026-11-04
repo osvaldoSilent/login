@@ -5,6 +5,7 @@ import com.osvaldevops.login.domain.port.out.UserRepositoryPort;
 import com.osvaldevops.login.infrastructure.adapter.out.persistence.entity.UserJpaEntity;
 import com.osvaldevops.login.infrastructure.adapter.out.persistence.mapper.UserPersistenceMapper;
 import com.osvaldevops.login.infrastructure.adapter.out.persistence.repository.SpringDataUserRepository;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -42,7 +43,8 @@ public class UserPersistenceAdapter implements UserRepositoryPort {
      */
     @Override
     public User save(User user) {
-        UserJpaEntity saved = springDataUserRepository.save(userPersistenceMapper.toEntity(user));
+        UserJpaEntity entity = Objects.requireNonNull(userPersistenceMapper.toEntity(user));
+        UserJpaEntity saved = springDataUserRepository.save(entity);
         return userPersistenceMapper.toDomain(saved);
     }
 }

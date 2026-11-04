@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
+import org.springframework.lang.NonNull;
 
 /**
  * Apache Kafka topic configuration for user lifecycle events.
@@ -17,7 +18,7 @@ public class KafkaTopicConfig {
      */
     @Bean
     public NewTopic userCreatedTopic(
-            @Value("${app.kafka.topics.user-created:user-created-events}") String topicName
+            @Value("${app.kafka.topics.user-created:user-created-events}") @NonNull String topicName
     ) {
         return TopicBuilder.name(topicName)
                 .partitions(3)

@@ -36,20 +36,25 @@ public class KafkaUserEventPublisherAdapter implements UserEventPublisherPort {
         String key = event.userId() != null ? event.userId().toString() : event.email();
 
         try {
-            kafkaTemplate.send(userCreatedTopic, key, event)
-                    .whenComplete((result, ex) -> {
-                        if (ex != null) {
-                            log.error("Failed to publish UserCreatedEvent for email={} to topic={}",
-                                    event.email(), userCreatedTopic, ex);
-                        } else {
-                            log.info("Published UserCreatedEvent for userId={} email={} to topic={} partition={} offset={}",
-                                     event.userId(),
-                                     event.email(),
-                                     userCreatedTopic,
-                                     result.getRecordMetadata().partition(),
-                                     result.getRecordMetadata().offset());
-                        }
-                    });
+            final String userCreatedTopic2 = userCreatedTopic;
+            if (userCreatedTopic2 != null && key != null) {
+                kafkaTemplate.send(userCreatedTopic2, key, event)
+                        .whenComplete((result, ex) -> {
+                            if (ex != null) {
+                                log.error("Failed to publish UserCreatedEvent for email={} to topic={}",
+                                        event.email(), userCreatedTopic, ex);
+                            } else {
+                                log.info("Published UserCreatedEvent for userId={} email={} to topic={} partition={} offset={}",
+                                         event.userId(),
+                                         event.email(),
+                                         userCreatedTopic,
+                                         result.getRecordMetadata().partition(),
+                                         result.getRecordMetadata().offset());
+                            }
+                        });
+            } else {
+                // TODO handle null value
+            }
         } catch (RuntimeException ex) {
             throw new EventPublicationException("Error publishing UserCreatedEvent to Kafka", ex);
         }

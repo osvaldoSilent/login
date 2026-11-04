@@ -11,6 +11,7 @@ import com.osvaldevops.login.domain.exception.UserAlreadyExistsException;
 import com.osvaldevops.login.infrastructure.adapter.in.web.dto.ApiErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,10 +44,10 @@ class GlobalExceptionHandlerTest {
         ResponseEntity<ApiErrorResponse> response = exceptionHandler.handleInvalidCredentials(ex, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().status()).isEqualTo(401);
-        assertThat(response.getBody().message()).isEqualTo("Invalid email or password");
-        assertThat(response.getBody().path()).isEqualTo("/api/v1/auth/login");
+        ApiErrorResponse body = Objects.requireNonNull(response.getBody());
+        assertThat(body.status()).isEqualTo(401);
+        assertThat(body.message()).isEqualTo("Invalid email or password");
+        assertThat(body.path()).isEqualTo("/api/v1/auth/login");
     }
 
     @Test
@@ -57,9 +58,9 @@ class GlobalExceptionHandlerTest {
         ResponseEntity<ApiErrorResponse> response = exceptionHandler.handleUserAccountDisabled(ex, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().status()).isEqualTo(403);
-        assertThat(response.getBody().message()).isEqualTo("User account is disabled");
+        ApiErrorResponse body = Objects.requireNonNull(response.getBody());
+        assertThat(body.status()).isEqualTo(403);
+        assertThat(body.message()).isEqualTo("User account is disabled");
     }
 
     @Test
@@ -70,9 +71,9 @@ class GlobalExceptionHandlerTest {
         ResponseEntity<ApiErrorResponse> response = exceptionHandler.handleUserAlreadyExists(ex, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().status()).isEqualTo(409);
-        assertThat(response.getBody().message()).isEqualTo("User already exists");
+        ApiErrorResponse body = Objects.requireNonNull(response.getBody());
+        assertThat(body.status()).isEqualTo(409);
+        assertThat(body.message()).isEqualTo("User already exists");
     }
 
     @Test
@@ -88,8 +89,8 @@ class GlobalExceptionHandlerTest {
         ResponseEntity<ApiErrorResponse> response = exceptionHandler.handleValidationErrors(ex, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().validationErrors()).containsEntry("email", "Email must be valid");
+        ApiErrorResponse body = Objects.requireNonNull(response.getBody());
+        assertThat(body.validationErrors()).containsEntry("email", "Email must be valid");
     }
 
     @Test
@@ -100,8 +101,8 @@ class GlobalExceptionHandlerTest {
         ResponseEntity<ApiErrorResponse> response = exceptionHandler.handleMalformedJson(ex, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).isEqualTo("Malformed JSON request body");
+        ApiErrorResponse body = Objects.requireNonNull(response.getBody());
+        assertThat(body.message()).isEqualTo("Malformed JSON request body");
     }
 
     @Test
@@ -113,7 +114,7 @@ class GlobalExceptionHandlerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().status()).isEqualTo(409);
+        assertThat(Objects.requireNonNull(response.getBody()).status()).isEqualTo(409);
     }
 
     @Test
@@ -124,8 +125,8 @@ class GlobalExceptionHandlerTest {
         ResponseEntity<ApiErrorResponse> response = exceptionHandler.handleDatabaseAccessException(ex, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().status()).isEqualTo(503);
+        ApiErrorResponse body = Objects.requireNonNull(response.getBody());
+        assertThat(body.status()).isEqualTo(503);
     }
 
     @Test
@@ -136,8 +137,8 @@ class GlobalExceptionHandlerTest {
         ResponseEntity<ApiErrorResponse> response = exceptionHandler.handleMessagingException(ex, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().status()).isEqualTo(503);
+        ApiErrorResponse body = Objects.requireNonNull(response.getBody());
+        assertThat(body.status()).isEqualTo(503);
     }
 
     @Test
@@ -148,8 +149,8 @@ class GlobalExceptionHandlerTest {
         ResponseEntity<ApiErrorResponse> response = exceptionHandler.handleUnexpectedException(ex, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().status()).isEqualTo(500);
+        ApiErrorResponse body = Objects.requireNonNull(response.getBody());
+        assertThat(body.status()).isEqualTo(500);
     }
 }
 
