@@ -9,6 +9,7 @@ import com.osvaldevops.login.infrastructure.adapter.out.persistence.entity.UserJ
 import com.osvaldevops.login.infrastructure.adapter.out.persistence.mapper.UserPersistenceMapper;
 import com.osvaldevops.login.infrastructure.adapter.out.persistence.repository.SpringDataUserRepository;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -113,14 +114,14 @@ class UserPersistenceAdapterTest {
     @DisplayName("Should map domain User to JPA entity, save it, and return mapped domain User")
     void shouldSaveAndReturnDomainUser() {
         when(userPersistenceMapper.toEntity(domainUser)).thenReturn(jpaEntity);
-        when(springDataUserRepository.save(jpaEntity)).thenReturn(jpaEntity);
+        when(springDataUserRepository.save(Objects.requireNonNull(jpaEntity))).thenReturn(Objects.requireNonNull(jpaEntity));
         when(userPersistenceMapper.toDomain(jpaEntity)).thenReturn(domainUser);
 
         User saved = userPersistenceAdapter.save(domainUser);
 
         assertThat(saved).isEqualTo(domainUser);
         verify(userPersistenceMapper).toEntity(domainUser);
-        verify(springDataUserRepository).save(jpaEntity);
+        verify(springDataUserRepository).save(Objects.requireNonNull(jpaEntity));
         verify(userPersistenceMapper).toDomain(jpaEntity);
     }
 }
