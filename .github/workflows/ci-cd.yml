@@ -1,0 +1,78 @@
+name: CI/CD Pipeline - Quality Gate & Cloud Run
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  verify-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Requerido por SonarQube para blame information
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run Unit Tests, Coverage & SonarQube Quality Gate
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
+          SPRING_PROFILES_ACTIVE: dev
+          DB_URL: ${{ secrets.DB_URL }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          PUBSUB_USER_CREATED_TOPIC: ${{ secrets.PUBSUB_USER_CREATED_TOPIC }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+
+
+
+
+        run: |
+          mvn clean verify sonar:sonar \
+            -Dsonar.projectKey="$SONAR_PROJECT_KEY" \
+            -Dsonar.host.url="$SONAR_HOST_URL" \
+            -Dsonar.qualitygate.wait=true
+
+      - name: Authenticate to Google Cloud
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Build and Push Container with Jib
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        run: |
+          mvn compile com.google.cloud.tools:jib-maven-plugin:3.4.5:build \
+            -Djib.from.image=eclipse-temurin:25-jre \
+            -Djib.to.image="us-central1-docker.pkg.dev/${GCP_PROJECT_ID}/microservices/login-service:${GITHUB_SHA}"
+
+      - name: Deploy to Cloud Run
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: login-service
+          region: us-central1
+          image: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/microservices/login-service:${{ github.sha }}
+          env_vars: |
+            SPRING_PROFILES_ACTIVE=dev
+            DB_URL=${{ secrets.DB_URL }}
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}
+            PUBSUB_USER_CREATED_TOPIC=${{ secrets.PUBSUB_USER_CREATED_TOPIC }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+          flags: '--allow-unauthenticated --min-instances=0 --max-instances=2 --cpu-boost'
