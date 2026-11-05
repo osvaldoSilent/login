@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# ¡CRÍTICO PARA WORKLOAD IDENTITY!
+permissions:
+  id-token: write # Permite a GitHub solicitar el token OIDC a GCP
+  contents: read  # Permite leer el código del repositorio
+
 jobs:
   verify-and-deploy:
     runs-on: ubuntu-latest
@@ -14,7 +19,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Requerido por SonarQube para blame information
+          fetch-depth: 0
 
       - name: Set up JDK 25
         uses: actions/setup-java@v4
@@ -26,7 +31,7 @@ jobs:
       - name: Run Unit Tests, Coverage & SonarQube Quality Gate
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_HOST_URL: "https://sonarcloud.io" 
           SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
           SONAR_ORGANIZATION_KEY: ${{ secrets.SONAR_ORGANIZATION_KEY }}
           SPRING_PROFILES_ACTIVE: dev
@@ -38,19 +43,20 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_EXPIRATION_MS: ${{ secrets.JWT_EXPIRATION_MS }}
         run: |
-          mvn sonar:sonar \
+          mvn clean verify sonar:sonar \
             -Dsonar.host.url=$SONAR_HOST_URL \
             -Dsonar.organization=$SONAR_ORGANIZATION_KEY \
             -Dsonar.projectKey=$SONAR_PROJECT_KEY \
             -Dsonar.token=$SONAR_TOKEN \
             -Dsonar.qualitygate.wait=true
 
-      #- name: Authenticate to Google Cloud
-      #  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      #  uses: google-github-actions/auth@v2
-      #  with:
-      #    credentials_json: ${{ secrets.GCP_SA_KEY }}
-
+      - name: Authenticate to Google Cloud
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+#
       #- name: Build and Push Container with Jib
       #  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       #  env:
@@ -59,7 +65,7 @@ jobs:
       #    mvn compile com.google.cloud.tools:jib-maven-plugin:3.4.5:build \
       #      -Djib.from.image=eclipse-temurin:25-jre \
       #      -Djib.to.image="us-central1-docker.pkg.dev/${GCP_PROJECT_ID}/microservices/login-service:${GITHUB_SHA}"
-
+#
       #- name: Deploy to Cloud Run
       #  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       #  uses: google-github-actions/deploy-cloudrun@v2
