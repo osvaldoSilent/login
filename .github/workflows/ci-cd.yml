@@ -37,9 +37,11 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_EXPIRATION_MS: ${{ secrets.JWT_EXPIRATION_MS }}
         run: |
-          mvn clean verify sonar:sonar \
-            -Dsonar.projectKey="$SONAR_PROJECT_KEY" \
-            -Dsonar.host.url="$SONAR_HOST_URL" \
+          mvn sonar:sonar \
+            -Dsonar.host.url=$SONAR_HOST_URL \
+            -Dsonar.organization=$SONAR_ORGANIZATION_KEY \
+            -Dsonar.projectKey=$SONAR_PROJECT_KEY \
+            -Dsonar.token=$SONAR_TOKEN \
             -Dsonar.qualitygate.wait=true
 
       #- name: Authenticate to Google Cloud
