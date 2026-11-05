@@ -26,7 +26,7 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("Login & User Service API")
                         .version("1.0.0")
-                        .description("Hexagonal Architecture Authentication & User Registration Service with Spring Security, JWT, JPA, PostgreSQL, and Apache Kafka.")
+                        .description("Hexagonal Architecture Authentication & User Registration Service with Spring Security, JWT, JPA, PostgreSQL, and Google Cloud Pub/Sub.")
                         .contact(new Contact()
                                 .name("OsvalDevOps")
                                 .email("contact@osvaldevops.com")))

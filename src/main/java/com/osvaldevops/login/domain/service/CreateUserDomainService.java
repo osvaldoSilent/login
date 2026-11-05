@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Domain service implementing {@link CreateUserUseCase} to register new user accounts
- * with BCrypt-hashed passwords and publish {@link UserCreatedEvent} messages to Kafka.
+ * with BCrypt-hashed passwords and publish {@link UserCreatedEvent} messages to Google Cloud Pub/Sub.
  */
 @Service
 @RequiredArgsConstructor
@@ -56,7 +56,7 @@ public class CreateUserDomainService implements CreateUserUseCase {
 
         User savedUser = userRepositoryPort.save(newUser);
 
-        // Publish UserCreatedEvent for downstream consumers (e.g., Notification Service)
+        // Publish UserCreatedEvent for downstream consumers (e.g., Notification Service via GCP Pub/Sub)
         UserCreatedEvent event = new UserCreatedEvent(
                 savedUser.getId(),
                 savedUser.getEmail(),

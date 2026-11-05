@@ -15,7 +15,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.kafka.KafkaException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -134,14 +133,14 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handles Kafka event publication failures ({@code 503 Service Unavailable}).
+     * Handles Google Cloud Pub/Sub event publication failures ({@code 503 Service Unavailable}).
      */
-    @ExceptionHandler({EventPublicationException.class, KafkaException.class})
+    @ExceptionHandler(EventPublicationException.class)
     public ResponseEntity<ApiErrorResponse> handleMessagingException(
-            RuntimeException ex,
+            EventPublicationException ex,
             HttpServletRequest request
     ) {
-        log.error("Kafka messaging error on {}", request.getRequestURI(), ex);
+        log.error("GCP Pub/Sub messaging error on {}", request.getRequestURI(), ex);
         return buildResponse(
                 HttpStatus.SERVICE_UNAVAILABLE,
                 "Messaging service is temporarily unavailable",

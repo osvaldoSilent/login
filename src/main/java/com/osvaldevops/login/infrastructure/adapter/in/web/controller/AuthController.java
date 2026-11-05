@@ -82,14 +82,14 @@ public class AuthController {
     }
 
     /**
-     * Registers a new user account in PostgreSQL and publishes a {@code UserCreatedEvent} to Kafka.
+     * Registers a new user account in PostgreSQL and publishes a {@code UserCreatedEvent} to Google Cloud Pub/Sub.
      *
      * @param request validated user registration request payload
      * @return {@code 201 Created} with {@link UserResponse} representing the newly created user
      */
     @Operation(
             summary = "Register a new user",
-            description = "Creates a new user account with a BCrypt-hashed password in PostgreSQL and publishes a UserCreatedEvent to Kafka."
+            description = "Creates a new user account with a BCrypt-hashed password in PostgreSQL and publishes a UserCreatedEvent to Google Cloud Pub/Sub."
     )
     @ApiResponses({
             @ApiResponse(
@@ -109,7 +109,7 @@ public class AuthController {
             ),
             @ApiResponse(
                     responseCode = "503",
-                    description = "Database or Kafka messaging unavailable",
+                    description = "Database or Google Cloud Pub/Sub messaging unavailable",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class))
             )
     })
