@@ -46,6 +46,7 @@ login-service/
     │   │   │   │   │   ├── AuthenticateUserUseCase.java
     │   │   │   │   │   └── CreateUserUseCase.java
     │   │   │   │   └── out/
+    │   │   │   │       ├── PasswordEncoderPort.java
     │   │   │   │       ├── TokenProviderPort.java
     │   │   │   │       ├── UserEventPublisherPort.java
     │   │   │   │       └── UserRepositoryPort.java
@@ -67,8 +68,11 @@ login-service/
     │   │       │       │   ├── entity/UserJpaEntity.java
     │   │       │       │   ├── mapper/UserPersistenceMapper.java
     │   │       │       │   └── repository/SpringDataUserRepository.java
-    │   │       │       └── security/JwtTokenAdapter.java
+    │   │       │       └── security/
+    │   │       │           ├── BCryptPasswordEncoderAdapter.java
+    │   │       │           └── JwtTokenAdapter.java
     │   │       └── config/
+    │   │           ├── BeanConfiguration.java
     │   │           ├── OpenApiConfig.java
     │   │           └── SecurityConfig.java
     │   └── resources/
@@ -91,7 +95,9 @@ login-service/
                     ├── persistence/
                     │   ├── UserPersistenceAdapterTest.java
                     │   └── mapper/UserPersistenceMapperTest.java
-                    └── security/JwtTokenAdapterTest.java
+                    └── security/
+                        ├── BCryptPasswordEncoderAdapterTest.java
+                        └── JwtTokenAdapterTest.java
 ```
 
 ---

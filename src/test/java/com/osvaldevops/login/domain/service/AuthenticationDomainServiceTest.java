@@ -12,6 +12,7 @@ import com.osvaldevops.login.domain.exception.UserAccountDisabledException;
 import com.osvaldevops.login.domain.model.User;
 import com.osvaldevops.login.domain.port.in.AuthenticateUserUseCase.AuthResult;
 import com.osvaldevops.login.domain.port.in.AuthenticateUserUseCase.LoginCommand;
+import com.osvaldevops.login.domain.port.out.PasswordEncoderPort;
 import com.osvaldevops.login.domain.port.out.TokenProviderPort;
 import com.osvaldevops.login.domain.port.out.UserRepositoryPort;
 import java.time.Instant;
@@ -24,8 +25,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
+/**
+ * Unit tests for {@link AuthenticationDomainService}.
+ */
 @ExtendWith(MockitoExtension.class)
 class AuthenticationDomainServiceTest {
 
@@ -36,7 +39,7 @@ class AuthenticationDomainServiceTest {
     private TokenProviderPort tokenProviderPort;
 
     @Mock
-    private PasswordEncoder passwordEncoder;
+    private PasswordEncoderPort passwordEncoderPort;
 
     @InjectMocks
     private AuthenticationDomainService authenticationDomainService;
@@ -59,44 +62,50 @@ class AuthenticationDomainServiceTest {
 
     @Test
     @DisplayName("Should authenticate user and return JWT token when credentials are valid")
-    void shouldAuthenticateSuccessfully_whenCredentialsAreValid() {
+    void should_AuthenticateSuccessfully_When_CredentialsAreValid() {
+        // Given
         LoginCommand command = new LoginCommand("user@osvaldevops.com", "rawSecret123");
 
         when(userRepositoryPort.findByEmail(command.email())).thenReturn(Optional.of(activeUser));
-        when(passwordEncoder.matches(command.rawPassword(), activeUser.getPassword())).thenReturn(true);
+        when(passwordEncoderPort.matches(command.rawPassword(), activeUser.getPassword())).thenReturn(true);
         when(tokenProviderPort.generateToken(activeUser)).thenReturn("mocked.jwt.token");
         when(tokenProviderPort.getExpirationMs()).thenReturn(3600000L);
 
+        // When
         AuthResult result = authenticationDomainService.authenticate(command);
 
+        // Then
         assertThat(result).isNotNull();
         assertThat(result.accessToken()).isEqualTo("mocked.jwt.token");
         assertThat(result.tokenType()).isEqualTo("Bearer");
         assertThat(result.expiresInMs()).isEqualTo(3600000L);
 
         verify(userRepositoryPort).findByEmail("user@osvaldevops.com");
-        verify(passwordEncoder).matches("rawSecret123", "$2a$10$hashedPassword");
+        verify(passwordEncoderPort).matches("rawSecret123", "$2a$10$hashedPassword");
         verify(tokenProviderPort).generateToken(activeUser);
     }
 
     @Test
     @DisplayName("Should throw InvalidCredentialsException when email does not exist")
-    void shouldThrowException_whenUserNotFound() {
+    void should_ThrowInvalidCredentialsException_When_UserNotFound() {
+        // Given
         LoginCommand command = new LoginCommand("unknown@osvaldevops.com", "rawSecret123");
 
         when(userRepositoryPort.findByEmail(command.email())).thenReturn(Optional.empty());
 
+        // When / Then
         assertThatThrownBy(() -> authenticationDomainService.authenticate(command))
                 .isInstanceOf(InvalidCredentialsException.class)
                 .hasMessage("Invalid email or password");
 
-        verify(passwordEncoder, never()).matches(any(), any());
+        verify(passwordEncoderPort, never()).matches(any(), any());
         verify(tokenProviderPort, never()).generateToken(any());
     }
 
     @Test
     @DisplayName("Should throw UserAccountDisabledException when user account is disabled")
-    void shouldThrowException_whenUserIsDisabled() {
+    void should_ThrowUserAccountDisabledException_When_UserIsDisabled() {
+        // Given
         User disabledUser = User.builder()
                 .id(UUID.randomUUID())
                 .email("disabled@osvaldevops.com")
@@ -110,22 +119,25 @@ class AuthenticationDomainServiceTest {
         LoginCommand command = new LoginCommand("disabled@osvaldevops.com", "rawSecret123");
         when(userRepositoryPort.findByEmail(command.email())).thenReturn(Optional.of(disabledUser));
 
+        // When / Then
         assertThatThrownBy(() -> authenticationDomainService.authenticate(command))
                 .isInstanceOf(UserAccountDisabledException.class)
                 .hasMessage("User account is disabled");
 
-        verify(passwordEncoder, never()).matches(any(), any());
+        verify(passwordEncoderPort, never()).matches(any(), any());
         verify(tokenProviderPort, never()).generateToken(any());
     }
 
     @Test
     @DisplayName("Should throw InvalidCredentialsException when password does not match")
-    void shouldThrowException_whenPasswordIsIncorrect() {
+    void should_ThrowInvalidCredentialsException_When_PasswordIsIncorrect() {
+        // Given
         LoginCommand command = new LoginCommand("user@osvaldevops.com", "wrongPassword");
 
         when(userRepositoryPort.findByEmail(command.email())).thenReturn(Optional.of(activeUser));
-        when(passwordEncoder.matches(command.rawPassword(), activeUser.getPassword())).thenReturn(false);
+        when(passwordEncoderPort.matches(command.rawPassword(), activeUser.getPassword())).thenReturn(false);
 
+        // When / Then
         assertThatThrownBy(() -> authenticationDomainService.authenticate(command))
                 .isInstanceOf(InvalidCredentialsException.class)
                 .hasMessage("Invalid email or password");

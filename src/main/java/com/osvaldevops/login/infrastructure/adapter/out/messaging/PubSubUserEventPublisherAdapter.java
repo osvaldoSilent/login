@@ -31,7 +31,7 @@ public class PubSubUserEventPublisherAdapter implements UserEventPublisherPort {
     public PubSubUserEventPublisherAdapter(
             PubSubTemplate pubSubTemplate,
             ObjectMapper objectMapper,
-            @Value("${app.pubsub.topics.user-dev:user-created-topic}") String userCreatedTopic
+            @Value("${app.pubsub.topics.user-created}") String userCreatedTopic
     ) {
         this.pubSubTemplate = pubSubTemplate;
         this.objectMapper = objectMapper;

@@ -11,6 +11,7 @@ import com.osvaldevops.login.domain.event.UserCreatedEvent;
 import com.osvaldevops.login.domain.exception.UserAlreadyExistsException;
 import com.osvaldevops.login.domain.model.User;
 import com.osvaldevops.login.domain.port.in.CreateUserUseCase.CreateUserCommand;
+import com.osvaldevops.login.domain.port.out.PasswordEncoderPort;
 import com.osvaldevops.login.domain.port.out.UserEventPublisherPort;
 import com.osvaldevops.login.domain.port.out.UserRepositoryPort;
 import java.util.UUID;
@@ -21,8 +22,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
+/**
+ * Unit tests for {@link CreateUserDomainService}.
+ */
 @ExtendWith(MockitoExtension.class)
 class CreateUserDomainServiceTest {
 
@@ -30,7 +33,7 @@ class CreateUserDomainServiceTest {
     private UserRepositoryPort userRepositoryPort;
 
     @Mock
-    private PasswordEncoder passwordEncoder;
+    private PasswordEncoderPort passwordEncoderPort;
 
     @Mock
     private UserEventPublisherPort userEventPublisherPort;
@@ -40,7 +43,8 @@ class CreateUserDomainServiceTest {
 
     @Test
     @DisplayName("Should create user, save to DB, and publish UserCreatedEvent when email does not exist")
-    void shouldCreateUserAndPublishEvent_whenEmailDoesNotExist() {
+    void should_CreateUserAndPublishEvent_When_EmailDoesNotExist() {
+        // Given
         CreateUserCommand command = new CreateUserCommand(
                 "newuser@osvaldevops.com",
                 "rawSecret123",
@@ -50,7 +54,7 @@ class CreateUserDomainServiceTest {
 
         UUID generatedId = UUID.randomUUID();
         when(userRepositoryPort.existsByEmail(command.email())).thenReturn(false);
-        when(passwordEncoder.encode("rawSecret123")).thenReturn("$2a$10$encodedSecret");
+        when(passwordEncoderPort.encode("rawSecret123")).thenReturn("$2a$10$encodedSecret");
         when(userRepositoryPort.save(any(User.class))).thenAnswer(invocation -> {
             User arg = invocation.getArgument(0);
             return User.builder()
@@ -65,8 +69,10 @@ class CreateUserDomainServiceTest {
                     .build();
         });
 
+        // When
         User created = createUserDomainService.createUser(command);
 
+        // Then
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepositoryPort).save(userCaptor.capture());
         User capturedUser = userCaptor.getValue();
@@ -91,7 +97,8 @@ class CreateUserDomainServiceTest {
 
     @Test
     @DisplayName("Should create user with custom role and publish event when role is provided")
-    void shouldCreateUserWithCustomRole_whenRoleIsProvided() {
+    void should_CreateUserWithCustomRole_When_RoleIsProvided() {
+        // Given
         CreateUserCommand command = new CreateUserCommand(
                 "admin@osvaldevops.com",
                 "adminSecret123",
@@ -100,11 +107,13 @@ class CreateUserDomainServiceTest {
         );
 
         when(userRepositoryPort.existsByEmail(command.email())).thenReturn(false);
-        when(passwordEncoder.encode("adminSecret123")).thenReturn("$2a$10$encodedAdmin");
+        when(passwordEncoderPort.encode("adminSecret123")).thenReturn("$2a$10$encodedAdmin");
         when(userRepositoryPort.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
+        // When
         User created = createUserDomainService.createUser(command);
 
+        // Then
         assertThat(created.getRole()).isEqualTo("ROLE_ADMIN");
         assertThat(created.getUserName()).isEqualTo("osval_admin");
         assertThat(created.isEnabled()).isTrue();
@@ -113,7 +122,8 @@ class CreateUserDomainServiceTest {
 
     @Test
     @DisplayName("Should default to ROLE_USER when role is blank")
-    void shouldDefaultToRoleUser_whenRoleIsBlank() {
+    void should_DefaultToRoleUser_When_RoleIsBlank() {
+        // Given
         CreateUserCommand command = new CreateUserCommand(
                 "blankrole@osvaldevops.com",
                 "secret123",
@@ -122,18 +132,21 @@ class CreateUserDomainServiceTest {
         );
 
         when(userRepositoryPort.existsByEmail(command.email())).thenReturn(false);
-        when(passwordEncoder.encode("secret123")).thenReturn("$2a$10$encoded");
+        when(passwordEncoderPort.encode("secret123")).thenReturn("$2a$10$encoded");
         when(userRepositoryPort.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
+        // When
         User created = createUserDomainService.createUser(command);
 
+        // Then
         assertThat(created.getRole()).isEqualTo("ROLE_USER");
         verify(userEventPublisherPort).publishUserCreated(any(UserCreatedEvent.class));
     }
 
     @Test
     @DisplayName("Should throw UserAlreadyExistsException and not publish event when email is already registered")
-    void shouldThrowException_whenEmailAlreadyExists() {
+    void should_ThrowUserAlreadyExistsException_When_EmailAlreadyExists() {
+        // Given
         CreateUserCommand command = new CreateUserCommand(
                 "existing@osvaldevops.com",
                 "rawSecret123",
@@ -143,11 +156,12 @@ class CreateUserDomainServiceTest {
 
         when(userRepositoryPort.existsByEmail(command.email())).thenReturn(true);
 
+        // When / Then
         assertThatThrownBy(() -> createUserDomainService.createUser(command))
                 .isInstanceOf(UserAlreadyExistsException.class)
                 .hasMessage("User with email existing@osvaldevops.com already exists");
 
-        verify(passwordEncoder, never()).encode(any());
+        verify(passwordEncoderPort, never()).encode(any());
         verify(userRepositoryPort, never()).save(any());
         verify(userEventPublisherPort, never()).publishUserCreated(any());
     }

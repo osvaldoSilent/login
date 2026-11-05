@@ -4,23 +4,21 @@ import com.osvaldevops.login.domain.exception.InvalidCredentialsException;
 import com.osvaldevops.login.domain.exception.UserAccountDisabledException;
 import com.osvaldevops.login.domain.model.User;
 import com.osvaldevops.login.domain.port.in.AuthenticateUserUseCase;
+import com.osvaldevops.login.domain.port.out.PasswordEncoderPort;
 import com.osvaldevops.login.domain.port.out.TokenProviderPort;
 import com.osvaldevops.login.domain.port.out.UserRepositoryPort;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
 
 /**
- * Domain service implementing {@link AuthenticateUserUseCase} to validate user credentials
- * against PostgreSQL and issue signed Bearer JWT tokens.
+ * Pure domain service implementing {@link AuthenticateUserUseCase} to validate user credentials
+ * and issue signed Bearer JWT tokens through outbound ports.
  */
-@Service
 @RequiredArgsConstructor
 public class AuthenticationDomainService implements AuthenticateUserUseCase {
 
     private final UserRepositoryPort userRepositoryPort;
     private final TokenProviderPort tokenProviderPort;
-    private final PasswordEncoder passwordEncoder;
+    private final PasswordEncoderPort passwordEncoderPort;
 
     /**
      * {@inheritDoc}
@@ -36,8 +34,8 @@ public class AuthenticationDomainService implements AuthenticateUserUseCase {
             throw new UserAccountDisabledException("User account is disabled");
         }
 
-        // Verify raw password against stored BCrypt hash
-        if (!passwordEncoder.matches(command.rawPassword(), user.getPassword())) {
+        // Verify raw password against stored hash via outbound port
+        if (!passwordEncoderPort.matches(command.rawPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("Invalid email or password");
         }
 

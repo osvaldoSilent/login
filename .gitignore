@@ -74,6 +74,3 @@ src/main/resources/application.yml
 # OS Generated
 .DS_Store
 Thumbs.db
-
-src/main/resources/application-dev.yml
-src/main/resources/application.yml

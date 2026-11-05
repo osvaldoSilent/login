@@ -4,33 +4,29 @@ import com.osvaldevops.login.domain.event.UserCreatedEvent;
 import com.osvaldevops.login.domain.exception.UserAlreadyExistsException;
 import com.osvaldevops.login.domain.model.User;
 import com.osvaldevops.login.domain.port.in.CreateUserUseCase;
+import com.osvaldevops.login.domain.port.out.PasswordEncoderPort;
 import com.osvaldevops.login.domain.port.out.UserEventPublisherPort;
 import com.osvaldevops.login.domain.port.out.UserRepositoryPort;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Domain service implementing {@link CreateUserUseCase} to register new user accounts
- * with BCrypt-hashed passwords and publish {@link UserCreatedEvent} messages to Google Cloud Pub/Sub.
+ * Pure domain service implementing {@link CreateUserUseCase} to register new user accounts
+ * with hashed passwords and publish {@link UserCreatedEvent} messages via outbound ports.
  */
-@Service
 @RequiredArgsConstructor
 public class CreateUserDomainService implements CreateUserUseCase {
 
     private static final String DEFAULT_ROLE = "ROLE_USER";
 
     private final UserRepositoryPort userRepositoryPort;
-    private final PasswordEncoder passwordEncoder;
+    private final PasswordEncoderPort passwordEncoderPort;
     private final UserEventPublisherPort userEventPublisherPort;
 
     /**
      * {@inheritDoc}
      */
     @Override
-    @Transactional
     public User createUser(CreateUserCommand command) {
         // Verify that the email address is not already registered
         if (userRepositoryPort.existsByEmail(command.email())) {
@@ -43,10 +39,10 @@ public class CreateUserDomainService implements CreateUserUseCase {
                 ? DEFAULT_ROLE
                 : command.role();
 
-        // Build domain user with BCrypt-encoded password
+        // Build domain user with encoded password via outbound port
         User newUser = User.builder()
                 .email(command.email())
-                .password(passwordEncoder.encode(command.rawPassword()))
+                .password(passwordEncoderPort.encode(command.rawPassword()))
                 .userName(command.userName())
                 .role(assignedRole)
                 .enabled(true)
