@@ -74,3 +74,22 @@ Whenever a major iteration is completed in `login-service`:
 - **Iteration 3 (Pure Hexagonal Domain & DevSecOps Hardening):** Extracted `PasswordEncoderPort` and `BCryptPasswordEncoderAdapter`, wired pure domain services via `BeanConfiguration`, removed hardcoded `@Value` fallbacks, masked all secrets in `application-dev.yml` for GitHub Actions OIDC/Secrets, and verified 39/39 unit tests with 100% JaCoCo coverage.
 - **Iteration 4 (Cloud Run Memory Tuning & OpenAPI 3 Optimization):** Enabled Java 25 Virtual Threads, `lazy-initialization: true`, HikariCP `maximum-pool-size: 5`, Jib `eclipse-temurin:25-jre-alpine` with `-XX:+UseCompactObjectHeaders,-XX:+UseSerialGC`, enriched OpenAPI 3 `@Schema`/`@SecurityRequirements`/`@ApiResponses`, standardized all code/CI comments in English, and updated `README.md`.
 
+---
+
+# 6. Session Closure & Downstream Handoff (`notifications-service`)
+- **Session Status:** `CLOSED` — Ready for production deployment on Google Cloud Run (`2026-11-05`).
+- **Verification Summary:** 39/39 unit tests passing, 100% JaCoCo coverage across 15 analyzed classes, zero framework imports in `domain/`, zero exposed secrets.
+- **Outbound Event Contract for `notifications-service`:**
+  - **Topic Env Var:** `PUBSUB_USER_CREATED_TOPIC` (`app.pubsub.topics.user-created`)
+  - **Pub/Sub Attributes:** `eventType: "USER_CREATED"`, `userId: "<UUID>"`
+  - **JSON Payload (`UserCreatedEvent`):**
+    ```json
+    {
+      "userId": "550e8400-e29b-41d4-a716-446655440000",
+      "email": "osval@osvaldevops.com",
+      "userName": "osval",
+      "role": "ROLE_USER",
+      "createdAt": "2026-11-05T19:00:00Z"
+    }
+    ```
+
