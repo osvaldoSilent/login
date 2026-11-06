@@ -74,4 +74,18 @@ jobs:
       - name: Deploy to Cloud Run
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[deploy]')
         uses: google-github-actions/deploy-cloudrun@v2
-        # ... (el resto de tu configuración de Cloud Run queda intacto)
+        with:
+          service: login-service
+          region: us-central1
+          image: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/microservices/login-service:${{ github.sha }}
+          env_vars: |
+            SPRING_PROFILES_ACTIVE=dev
+            DB_URL=${{ secrets.DB_URL }}
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}
+            PUBSUB_USER_CREATED_TOPIC=${{ secrets.PUBSUB_USER_CREATED_TOPIC }}
+            JWT_EXPIRATION_MS=${{ secrets.JWT_EXPIRATION_MS }}
+          secrets: |
+            DB_PASSWORD=db-password:latest
+            JWT_SECRET=jwt-secret:latest
+          flags: '--service-account=cloud-run-sa@project-d168a88d-1130-49df-8d8.iam.gserviceaccount.com --allow-unauthenticated --min-instances=0 --max-instances=2 --memory=512Mi --cpu=1 --cpu-boost'
