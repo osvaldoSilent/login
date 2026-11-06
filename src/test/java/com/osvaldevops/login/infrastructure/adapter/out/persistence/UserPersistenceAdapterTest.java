@@ -20,6 +20,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * Unit tests for {@link UserPersistenceAdapter}.
+ */
 @ExtendWith(MockitoExtension.class)
 class UserPersistenceAdapterTest {
 

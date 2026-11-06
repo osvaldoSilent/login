@@ -15,10 +15,12 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
-@Tag(name = "Authentication & Users", description = "Endpoints for user login and registration")
+@Tag(name = "Authentication & Users", description = "Public endpoints for user authentication (JWT issuance) and account registration")
 public class AuthController {
 
     private final AuthenticateUserUseCase authenticateUserUseCase;
@@ -46,36 +48,42 @@ public class AuthController {
      */
     @Operation(
             summary = "Authenticate user and generate JWT",
-            description = "Validates user email and password against PostgreSQL and returns a signed Bearer JWT token."
+            description = "Validates user email and password against PostgreSQL and returns a signed HMAC-SHA256 Bearer JWT token."
     )
+    @SecurityRequirements
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
                     description = "Successfully authenticated",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AuthResponse.class))
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = AuthResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Validation error or malformed JSON",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class))
+                    description = "Validation error or malformed JSON request body",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ApiErrorResponse.class))
             ),
             @ApiResponse(
                     responseCode = "401",
                     description = "Invalid email or password",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class))
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ApiErrorResponse.class))
             ),
             @ApiResponse(
                     responseCode = "403",
                     description = "User account is disabled",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class))
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Unexpected internal server error",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ApiErrorResponse.class))
             ),
             @ApiResponse(
                     responseCode = "503",
-                    description = "Database unavailable",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class))
+                    description = "Database service is temporarily unavailable",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ApiErrorResponse.class))
             )
     })
-    @PostMapping("/login")
+    @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         AuthResult result = authenticateUserUseCase.authenticate(authWebMapper.toCommand(request));
         return ResponseEntity.ok(authWebMapper.toResponse(result));
@@ -91,29 +99,35 @@ public class AuthController {
             summary = "Register a new user",
             description = "Creates a new user account with a BCrypt-hashed password in PostgreSQL and publishes a UserCreatedEvent to Google Cloud Pub/Sub."
     )
+    @SecurityRequirements
     @ApiResponses({
             @ApiResponse(
                     responseCode = "201",
                     description = "User successfully created",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponse.class))
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = UserResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Validation error or malformed JSON",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class))
+                    description = "Validation error or malformed JSON request body",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ApiErrorResponse.class))
             ),
             @ApiResponse(
                     responseCode = "409",
-                    description = "User with the given email already exists",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class))
+                    description = "User with the given email already exists or database integrity constraint violated",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ApiErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Unexpected internal server error",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ApiErrorResponse.class))
             ),
             @ApiResponse(
                     responseCode = "503",
-                    description = "Database or Google Cloud Pub/Sub messaging unavailable",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class))
+                    description = "Database or Google Cloud Pub/Sub messaging service is temporarily unavailable",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ApiErrorResponse.class))
             )
     })
-    @PostMapping("/register")
+    @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<UserResponse> register(@Valid @RequestBody CreateUserRequest request) {
         User createdUser = createUserUseCase.createUser(authWebMapper.toCreateCommand(request));
         return ResponseEntity.status(HttpStatus.CREATED).body(authWebMapper.toUserResponse(createdUser));

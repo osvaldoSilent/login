@@ -24,6 +24,9 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
+/**
+ * Unit tests for {@link GlobalExceptionHandler}.
+ */
 class GlobalExceptionHandlerTest {
 
     private GlobalExceptionHandler exceptionHandler;
@@ -132,7 +135,7 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("Should return 503 SERVICE_UNAVAILABLE for EventPublicationException")
     void shouldHandleMessagingException() {
-        EventPublicationException ex = new EventPublicationException("Kafka down", new RuntimeException());
+        EventPublicationException ex = new EventPublicationException("GCP Pub/Sub unavailable", new RuntimeException());
 
         ResponseEntity<ApiErrorResponse> response = exceptionHandler.handleMessagingException(ex, request);
 

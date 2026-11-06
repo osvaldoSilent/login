@@ -9,12 +9,12 @@ import jakarta.validation.constraints.NotBlank;
  */
 @Schema(description = "Request payload for user authentication")
 public record LoginRequest(
-        @Schema(description = "Registered email address of the user", example = "osval@osvaldevops.com")
+        @Schema(description = "Registered email address of the user", example = "osval@osvaldevops.com", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotBlank(message = "Email is required")
         @Email(message = "Email must be valid")
         String email,
 
-        @Schema(description = "Plain-text password of the user", example = "secretPassword123")
+        @Schema(description = "Plain-text password of the user", example = "secretPassword123", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotBlank(message = "Password is required")
         String password
 ) {}

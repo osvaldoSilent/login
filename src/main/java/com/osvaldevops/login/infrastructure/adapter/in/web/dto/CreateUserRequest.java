@@ -10,20 +10,20 @@ import jakarta.validation.constraints.Size;
  */
 @Schema(description = "Request payload for registering a new user account")
 public record CreateUserRequest(
-        @Schema(description = "Unique email address for the new user", example = "osval@osvaldevops.com")
+        @Schema(description = "Unique email address for the new user", example = "osval@osvaldevops.com", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotBlank(message = "Email is required")
         @Email(message = "Email must be valid")
         String email,
 
-        @Schema(description = "Password (minimum 6 characters)", example = "secretPassword123")
+        @Schema(description = "Password (minimum 6 characters)", example = "secretPassword123", minLength = 6, requiredMode = Schema.RequiredMode.REQUIRED)
         @NotBlank(message = "Password is required")
         @Size(min = 6, message = "Password must be at least 6 characters")
         String password,
 
-        @Schema(description = "Display username", example = "osval")
+        @Schema(description = "Display username", example = "osval", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotBlank(message = "User name is required")
         String userName,
 
-        @Schema(description = "Optional user role (defaults to ROLE_USER if omitted)", example = "ROLE_USER")
+        @Schema(description = "Optional user role (defaults to ROLE_USER if omitted)", example = "ROLE_USER", defaultValue = "ROLE_USER", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
         String role
 ) {}

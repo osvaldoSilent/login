@@ -10,6 +10,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
+/**
+ * Unit tests for {@link UserPersistenceMapper}.
+ */
 class UserPersistenceMapperTest {
 
     private final UserPersistenceMapper mapper = Mappers.getMapper(UserPersistenceMapper.class);

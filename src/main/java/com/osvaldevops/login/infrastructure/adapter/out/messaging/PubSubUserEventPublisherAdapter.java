@@ -45,7 +45,8 @@ public class PubSubUserEventPublisherAdapter implements UserEventPublisherPort {
     public void publishUserCreated(UserCreatedEvent event) {
         String userKey = event.userId() != null ? event.userId().toString() : event.email();
 
-        Map<String, String> attributes = new LinkedHashMap<>();
+        // Pre-size map for eventType and userId attributes to minimize heap allocations
+        Map<String, String> attributes = new LinkedHashMap<>(2);
         attributes.put(ATTR_EVENT_TYPE, EVENT_USER_CREATED);
         attributes.put(ATTR_USER_ID, userKey);
 

@@ -16,6 +16,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
+/**
+ * Unit tests for {@link AuthWebMapper}.
+ */
 class AuthWebMapperTest {
 
     private final AuthWebMapper mapper = Mappers.getMapper(AuthWebMapper.class);

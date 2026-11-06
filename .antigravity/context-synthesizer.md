@@ -9,7 +9,7 @@ Your purpose is to provide an immediate, high-density architectural snapshot of 
 - **Database & Migrations:** Neon Serverless PostgreSQL (`users` table) + Spring Data JPA + Flyway (`V1__init_users_table.sql`).
 - **Security:** Spring Security 6 (Stateless) + BCrypt (`BCryptPasswordEncoderAdapter`) + JJWT `0.12.6` HMAC-SHA256 (`JwtTokenAdapter`).
 - **Messaging (Outbound):** Google Cloud Pub/Sub (`spring-cloud-gcp-starter-pubsub` `5.9.0`) publishing `UserCreatedEvent` JSON payloads with attributes `eventType=USER_CREATED` and `userId=<UUID>`.
-- **Quality & CI/CD:** JaCoCo `0.8.13` (100% unit test coverage across 15 analyzed classes / 39 unit tests), Cucumber `7.15.0`, SonarCloud, Jib (`eclipse-temurin:25-jre`), GitHub Actions (`.github/workflows/ci-cd.yml` with GCP Workload Identity Federation OIDC).
+- **Quality & CI/CD:** JaCoCo `0.8.13` (100% unit test coverage across 15 analyzed classes / 39 unit tests), Cucumber `7.15.0`, SonarCloud, Jib (`eclipse-temurin:25-jre-alpine` with `-XX:+UseCompactObjectHeaders` & `-XX:+UseSerialGC`), GitHub Actions (`.github/workflows/ci-cd.yml` with GCP Workload Identity Federation OIDC).
 
 ---
 
@@ -72,4 +72,5 @@ Whenever a major iteration is completed in `login-service`:
 - **Iteration 1 (Unit Testing & Java 25 Compatibility):** Configured `maven-surefire-plugin` with ByteBuddy experimental flag for Java 25 and JaCoCo `prepare-agent`, reaching 100% unit test coverage.
 - **Iteration 2 (Kafka to GCP Pub/Sub Migration):** Replaced Apache Kafka with `PubSubUserEventPublisherAdapter` (`spring-cloud-gcp-starter-pubsub`) publishing `UserCreatedEvent` to GCP Pub/Sub for downstream consumption by `notifications-service`.
 - **Iteration 3 (Pure Hexagonal Domain & DevSecOps Hardening):** Extracted `PasswordEncoderPort` and `BCryptPasswordEncoderAdapter`, wired pure domain services via `BeanConfiguration`, removed hardcoded `@Value` fallbacks, masked all secrets in `application-dev.yml` for GitHub Actions OIDC/Secrets, and verified 39/39 unit tests with 100% JaCoCo coverage.
+- **Iteration 4 (Cloud Run Memory Tuning & OpenAPI 3 Optimization):** Enabled Java 25 Virtual Threads, `lazy-initialization: true`, HikariCP `maximum-pool-size: 5`, Jib `eclipse-temurin:25-jre-alpine` with `-XX:+UseCompactObjectHeaders,-XX:+UseSerialGC`, enriched OpenAPI 3 `@Schema`/`@SecurityRequirements`/`@ApiResponses`, standardized all code/CI comments in English, and updated `README.md`.
 

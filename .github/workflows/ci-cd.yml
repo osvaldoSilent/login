@@ -6,10 +6,10 @@ on:
   pull_request:
     branches: [ "main" ]
 
-# ¡CRÍTICO PARA WORKLOAD IDENTITY!
+# Required permissions for Google Cloud Workload Identity Federation (OIDC)
 permissions:
-  id-token: write # Permite a GitHub solicitar el token OIDC a GCP
-  contents: read  # Permite leer el código del repositorio
+  id-token: write # Allows GitHub Actions to request an OIDC token from GCP
+  contents: read  # Allows checking out the repository source code
 
 jobs:
   verify-and-deploy:

@@ -14,6 +14,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Unit tests for {@link JwtTokenAdapter}.
+ */
 class JwtTokenAdapterTest {
 
     private static final String SECRET_KEY_BASE64 =

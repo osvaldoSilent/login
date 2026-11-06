@@ -26,6 +26,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+/**
+ * Unit tests for {@link AuthController}.
+ */
 @ExtendWith(MockitoExtension.class)
 class AuthControllerTest {
 

@@ -39,7 +39,7 @@ Use this checklist before finalizing code changes, tuning configurations, or pre
 - [ ] **Avoid Unnecessary Boxing & Null Checks:** Use primitive `boolean` and `long` in domain models (`User.enabled`, `JwtTokenAdapter.expirationMs`) rather than boxed `Boolean` / `Long` wrappers.
 
 ## C. Container & JVM Memory Tuning for Cloud Run
-- [ ] **JRE Base Image (Not Full JDK):** In Jib (`ci-cd.yml`), always use `eclipse-temurin:25-jre` instead of a full JDK image to save ~150 MB of container image size and reduce Cloud Run cold-start time.
-- [ ] **JVM Container Flags (Recommended for Cloud Run):** When configuring `JAVA_TOOL_OPTIONS` in Cloud Run with `512Mi` memory:
-  - `-XX:MaxRAMPercentage=75.0 -XX:+UseCompactObjectHeaders -XX:+TieredCompilation -XX:TieredStopAtLevel=1` (faster startup and lower object memory overhead in Java 25).
+- [ ] **Alpine JRE Base Image (Not Full JDK):** In Jib (`ci-cd.yml`), always use `eclipse-temurin:25-jre-alpine` instead of a full JDK image to reduce container image size (~95 MB) and Cloud Run cold-start latency.
+- [ ] **JVM Container Flags (Cloud Run `512Mi`):** Verify `-Djib.container.jvmFlags` includes `-XX:+UseCompactObjectHeaders,-XX:+UseSerialGC,-XX:MaxRAMPercentage=75.0,-XX:TieredStopAtLevel=1,-Djava.security.egd=file:/dev/./urandom`.
+- [ ] **Spring Boot Memory Diet:** Keep `spring.main.lazy-initialization: true`, `spring.main.banner-mode: off`, `spring.threads.virtual.enabled: true`, and `spring.datasource.hikari.maximum-pool-size: 5` in `application-dev.yml`.
 
