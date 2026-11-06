@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 class JwtTokenAdapterTest {
 
     private static final String SECRET_KEY_BASE64 =
-            "bG9naW4tc2VydmljZS1zdXBlci1zZWNyZXQta2V5LWZvci1obWFjLXNoYTI1Ni1hdXRoZW50aWNhdGlvbg==";
+            "dW5pdC10ZXN0LWR1bW15LWp3dC1zZWNyZXQta2V5LWZvci1obWFjLXNoYTI1Ni12ZXJpZmljYXRpb24tb25seQ==";
     private static final long EXPIRATION_MS = 3600000L;
 
     private JwtTokenAdapter jwtTokenAdapter;
