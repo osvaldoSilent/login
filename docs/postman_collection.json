@@ -1,0 +1,119 @@
+{
+  "info": {
+    "_postman_id": "b8f9c2a1-4d3e-4a7b-9c8e-1a2b3c4d5e6f",
+    "name": "Login & User Registration Service API",
+    "description": "Postman Collection for testing the Hexagonal Architecture Login & User Registration Service (Local & Google Cloud Run).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8081",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Register New User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"osval@osvaldevops.com\",\n  \"password\": \"secretPassword123\",\n  \"userName\": \"osval\",\n  \"role\": \"ROLE_USER\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "register"
+          ]
+        },
+        "description": "Registers a new user account with a BCrypt-hashed password in PostgreSQL and publishes a UserCreatedEvent to Google Cloud Pub/Sub."
+      },
+      "response": []
+    },
+    {
+      "name": "2. Authenticate User (Login & Auto-Save JWT)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    const jsonData = pm.response.json();",
+              "    if (jsonData.accessToken) {",
+              "        pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+              "        console.log('JWT accessToken saved to collection variables.');",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"osval@osvaldevops.com\",\n  \"password\": \"secretPassword123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "login"
+          ]
+        },
+        "description": "Authenticates a user by email and password, returns a signed Bearer JWT token, and automatically stores it in the {{accessToken}} collection variable."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Actuator Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/actuator/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "actuator",
+            "health"
+          ]
+        },
+        "description": "Checks the health status of the microservice."
+      },
+      "response": []
+    }
+  ]
+}
+
