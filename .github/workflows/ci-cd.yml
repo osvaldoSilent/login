@@ -67,6 +67,8 @@ jobs:
           mvn compile com.google.cloud.tools:jib-maven-plugin:3.4.5:build \
             -Djib.from.image=eclipse-temurin:25-jre-alpine \
             -Djib.to.image="us-central1-docker.pkg.dev/${GCP_PROJECT_ID}/microservices/login-service:${GITHUB_SHA}" \
+            -Djib.to.auth.username="oauth2accesstoken" \
+            -Djib.to.auth.password="${{ steps.auth.outputs.access_token }}" \
             -Djib.container.jvmFlags="-XX:+UseCompactObjectHeaders,-XX:+UseSerialGC,-XX:MaxRAMPercentage=75.0,-XX:TieredStopAtLevel=1,-Djava.security.egd=file:/dev/./urandom"
 
       - name: Deploy to Cloud Run
