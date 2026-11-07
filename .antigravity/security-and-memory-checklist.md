@@ -20,6 +20,7 @@ Use this checklist before finalizing code changes, tuning configurations, or pre
 
 ## C. CI/CD & Cloud Run Security
 - [x] **Keyless GCP Auth (OIDC):** Confirm `.github/workflows/ci-cd.yml` uses `workload_identity_provider` and `service_account` (`id-token: write`) instead of static Service Account JSON keys.
+- [x] **Masked Runtime Service Account:** Confirm `.github/workflows/ci-cd.yml` uses `cloud-run-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com` so no literal GCP Project ID is exposed in the repository.
 - [x] **Actuator Surface Area:** Confirm `application-dev.yml` exposes only `health` (with `show-details: when_authorized`).
 
 ---
@@ -28,6 +29,7 @@ Use this checklist before finalizing code changes, tuning configurations, or pre
 
 ## A. Database & Connection Pool Footprint (Neon Serverless + HikariCP)
 - [x] **Zero Minimum Idle Connections:** Keep `spring.datasource.hikari.minimum-idle: 0` so idle connections are closed, reducing heap memory usage and allowing Neon Serverless compute to scale to zero when inactive.
+- [x] **Neon PgBouncer Flyway Compatibility:** Keep `spring.flyway.postgresql.transactional-lock: false` in `application-dev.yml` to prevent session-level advisory lock issues when connecting through Neon's `-pooler` endpoint.
 - [x] **Disable Open Session in View:** Keep `spring.jpa.open-in-view: false` so Hibernate sessions and JDBC connections are released immediately after `CreateUserDomainService` / `UserPersistenceAdapter` finishes, avoiding memory retention during HTTP serialization or async Pub/Sub callbacks.
 - [x] **Lightweight Existence Check:** Use `existsByEmail(email)` (`SELECT 1 ...`) in `CreateUserDomainService` instead of loading a full `UserJpaEntity` into memory before registration.
 
@@ -43,8 +45,10 @@ Use this checklist before finalizing code changes, tuning configurations, or pre
 - [x] **JVM Container Flags (Cloud Run `512Mi`):** Verify `-Djib.container.jvmFlags` includes `-XX:+UseCompactObjectHeaders,-XX:+UseSerialGC,-XX:MaxRAMPercentage=75.0,-XX:TieredStopAtLevel=1,-Djava.security.egd=file:/dev/./urandom`.
 - [x] **Spring Boot Memory Diet:** Keep `spring.main.lazy-initialization: true`, `spring.main.banner-mode: off`, `spring.threads.virtual.enabled: true`, and `spring.datasource.hikari.maximum-pool-size: 5` in `application-dev.yml`.
 
+- [x] **Artifact Registry FinOps Cleanup:** Maintain `cleanup-policy.json` (keep last 2 container versions) to stay within the 500 MB Google Artifact Registry Free Tier.
+
 ---
 
 # 3. Audit Sign-Off
-- **Last Audited:** `2026-11-05`
-- **Status:** `PASSED (17/17 checks verified)` — Approved for Cloud Run deployment.
+- **Last Audited:** `2026-11-06`
+- **Status:** `PASSED (20/20 checks verified)` — Approved for Cloud Run deployment.

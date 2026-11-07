@@ -117,31 +117,41 @@ Before cloning and running this service locally, make sure you have the followin
 
 ---
 
-## 🔑 4. Required Secrets & Environment Variables
+## 🔑 4. Required Secrets & Environment Variables (Where Each Secret Comes From)
 
-[`src/main/resources/application-dev.yml`](src/main/resources/application-dev.yml) is tracked in Git with **zero plain-text credentials**; all sensitive settings are resolved from environment variables injected via **GitHub Secrets** and **Google Cloud Secret Manager**.
+[`src/main/resources/application-dev.yml`](src/main/resources/application-dev.yml) is tracked in Git with **zero plain-text credentials**; all sensitive settings are resolved from environment variables injected via **GitHub Actions Secrets** and **Google Cloud Secret Manager**.
 
-### A. Application Environment Variables (`application-dev.yml`)
-| Variable | Description | Example |
-| :--- | :--- | :--- |
-| **`DB_URL`** | PostgreSQL JDBC URL (Neon Serverless or local instance). | `jdbc:postgresql://ep-xyz.us-east-2.aws.neon.tech/neondb?sslmode=require` |
-| **`DB_USERNAME`** | PostgreSQL database username. | `neondb_owner` |
-| **`DB_PASSWORD`** | PostgreSQL database password (injected in Cloud Run from GCP Secret Manager `db-password:latest`). | `********` |
-| **`GCP_PROJECT_ID`** | Google Cloud Project ID hosting the Pub/Sub topic. | `project-d168a88d-1130-49df-8d8` |
-| **`PUBSUB_USER_CREATED_TOPIC`** | Google Cloud Pub/Sub topic name for user registration events. | `user-created-topic` |
-| **`JWT_SECRET`** | Base64-encoded secret key of at least 256 bits (injected in Cloud Run from GCP Secret Manager `jwt-secret:latest`). | `bXlTdXBlclNlY3JldEtleUZvckpXVDI1NkJpdHNPbmx5...` |
-| **`JWT_EXPIRATION_MS`** | JWT token validity duration in milliseconds (defaults to `3600000` = 1 hour). | `3600000` |
-| **`PORT`** | HTTP server port (automatically injected by Cloud Run; defaults to `8081`). | `8081` |
+### A. Complete Secrets Reference Table
 
-### B. CI/CD Secrets in GitHub Actions (`Settings -> Secrets and variables -> Actions`)
-To enable SonarCloud analysis and keyless GCP deployment in [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml):
-- **SonarCloud**: `SONAR_TOKEN`, `SONAR_PROJECT_KEY`, `SONAR_ORGANIZATION_KEY`.
-- **Google Cloud OIDC (Workload Identity Federation)**:
-  - `GCP_WIF_PROVIDER`: Full WIF provider resource name (`projects/<NUM>/locations/global/workloadIdentityPools/<POOL>/providers/<PROVIDER>`).
-  - `GCP_SERVICE_ACCOUNT`: Deployment service account email (`github-actions-sa@<PROJECT_ID>.iam.gserviceaccount.com`).
+| Secret / Variable | Where It Is Used | Origin / Service Provider | Example Value |
+| :--- | :--- | :--- | :--- |
+| **`DB_URL`** | App (`application-dev.yml`), GitHub Secrets | **Neon PostgreSQL Console** (or local Docker) | `jdbc:postgresql://ep-xyz.us-east-2.aws.neon.tech/neondb?sslmode=require` |
+| **`DB_USERNAME`** | App (`application-dev.yml`), GitHub Secrets | **Neon PostgreSQL Console** | `neondb_owner` |
+| **`DB_PASSWORD`** | App (`application-dev.yml`), GitHub Secrets & **GCP Secret Manager** (`db-password:latest`) | **Neon PostgreSQL Console** | `********` |
+| **`GCP_PROJECT_ID`** | App (`application-dev.yml`), GitHub Secrets | **Google Cloud Console** (Project Dashboard) | `my-gcp-project-12345` |
+| **`PUBSUB_USER_CREATED_TOPIC`** | App (`application-dev.yml`), GitHub Secrets | **Google Cloud Pub/Sub** (Topics) | `user-created-topic` |
+| **`JWT_SECRET`** | App (`application-dev.yml`), GitHub Secrets & **GCP Secret Manager** (`jwt-secret:latest`) | **Self-Generated** (Base64 HMAC-SHA256 key $\ge$ 256 bits) | `bXlTdXBlclNlY3JldEtleUZvckpXVDI1NkJpdHNPbmx5...` |
+| **`JWT_EXPIRATION_MS`** | App (`application-dev.yml`), GitHub Secrets | **Custom Configuration** (Token TTL in milliseconds) | `3600000` |
+| **`SONAR_TOKEN`** | GitHub Secrets (`ci-cd.yml`) | **SonarCloud** (`My Account -> Security`) | `sqp_1a2b3c4d5e...` |
+| **`SONAR_PROJECT_KEY`** | GitHub Secrets (`ci-cd.yml`) | **SonarCloud** (`Project Information`) | `your-org_login-service` |
+| **`SONAR_ORGANIZATION_KEY`** | GitHub Secrets (`ci-cd.yml`) | **SonarCloud** (`Organization Settings`) | `your-org` |
+| **`GCP_WIF_PROVIDER`** | GitHub Secrets (`ci-cd.yml`) | **GCP IAM** (`Workload Identity Federation`) | `projects/123456789/locations/global/workloadIdentityPools/github-pool/providers/github-provider` |
+| **`GCP_SERVICE_ACCOUNT`** | GitHub Secrets (`ci-cd.yml`) | **GCP IAM** (`Service Accounts`) | `github-actions-sa@my-gcp-project.iam.gserviceaccount.com` |
 
-### C. How to Generate a Secure Base64 `JWT_SECRET`
-Run either command below to generate a cryptographically secure 64-byte (512-bit) Base64-encoded key:
+---
+
+### B. Step-by-Step Setup Guide for Your Own Configuration
+
+#### 1. Database Secrets (`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`) — Neon PostgreSQL
+1. Sign in to [Neon Console](https://console.neon.tech/) and create a new project (PostgreSQL 17).
+2. In your Neon Dashboard, click **Connect** and select **Java / JDBC** from the connection string dropdown.
+3. Copy the values:
+   - **`DB_URL`**: `jdbc:postgresql://<endpoint>.aws.neon.tech/<dbname>?sslmode=require` (without username/password embedded in the URL).
+   - **`DB_USERNAME`**: The role name displayed in Neon (e.g., `neondb_owner`).
+   - **`DB_PASSWORD`**: The role password generated by Neon.
+
+#### 2. JWT Secret (`JWT_SECRET` & `JWT_EXPIRATION_MS`)
+Generate your own 64-byte (512-bit) Base64-encoded secret key in your terminal:
 
 ```powershell
 # Windows PowerShell:
@@ -151,6 +161,80 @@ $bytes = New-Object Byte[] 64; [Security.Cryptography.RandomNumberGenerator]::Cr
 # Linux / macOS / Git Bash:
 openssl rand -base64 64 | tr -d '\n'
 ```
+- Copy the output string and use it as **`JWT_SECRET`**.
+- Set **`JWT_EXPIRATION_MS`** to `3600000` (1 hour in milliseconds) or your desired token expiration time.
+
+#### 3. Google Cloud Platform Setup (`GCP_PROJECT_ID`, Pub/Sub, Artifact Registry, Secret Manager & OIDC)
+Using the [Google Cloud CLI (`gcloud`)](https://cloud.google.com/sdk/docs/install), run the following commands in your own GCP project:
+
+```bash
+# 1. Set your GCP Project ID (use this exact ID for GCP_PROJECT_ID)
+export PROJECT_ID="your-gcp-project-id"
+gcloud config set project $PROJECT_ID
+
+# 2. Enable required Google Cloud APIs
+gcloud services enable \
+  run.googleapis.com \
+  pubsub.googleapis.com \
+  artifactregistry.googleapis.com \
+  secretmanager.googleapis.com \
+  iamcredentials.googleapis.com
+
+# 3. Create the Pub/Sub Topic (use this name for PUBSUB_USER_CREATED_TOPIC) & Dead Letter Topic (DLQ)
+gcloud pubsub topics create user-created-topic
+gcloud pubsub topics create user-created-dlq-topic
+
+# 3b. (For notifications-service) Configure the Push Subscription with Exponential Backoff & Dead Lettering
+# This prevents infinite retry loops from exhausting Cloud Run Free Tier CPU if SMTP/Resend returns 503:
+gcloud pubsub subscriptions update user-created-sub \
+  --min-retry-delay=10s \
+  --max-retry-delay=600s \
+  --dead-letter-topic=user-created-dlq-topic \
+  --max-delivery-attempts=5
+
+# Grant the GCP Pub/Sub Service Agent permission to forward dead-lettered messages:
+export PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+gcloud pubsub topics add-iam-policy-binding user-created-dlq-topic \
+  --member="serviceAccount:service-${PROJECT_NUMBER}@gcp-sa-pubsub.iam.gserviceaccount.com" \
+  --role="roles/pubsub.publisher"
+gcloud pubsub subscriptions add-iam-policy-binding user-created-sub \
+  --member="serviceAccount:service-${PROJECT_NUMBER}@gcp-sa-pubsub.iam.gserviceaccount.com" \
+  --role="roles/pubsub.subscriber"
+
+# 4. Create the Artifact Registry repository for Jib container images
+gcloud artifacts repositories create microservices \
+  --repository-format=docker \
+  --location=us-central1 \
+  --description="Docker repository for microservices"
+
+# 5. Store DB_PASSWORD and JWT_SECRET in Google Cloud Secret Manager (mounted by Cloud Run)
+echo -n "YOUR_NEON_DB_PASSWORD" | gcloud secrets create db-password --data-file=-
+echo -n "YOUR_BASE64_JWT_SECRET" | gcloud secrets create jwt-secret --data-file=-
+
+# 6. Create the Cloud Run runtime Service Account and grant Pub/Sub Publisher + Secret Manager access
+gcloud iam service-accounts create cloud-run-sa --display-name="Cloud Run Runtime SA"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:cloud-run-sa@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/pubsub.publisher"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:cloud-run-sa@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+```
+
+> **Note for [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml#L91):**  
+> Line 91 of `ci-cd.yml` automatically injects `${{ secrets.GCP_PROJECT_ID }}` into `--service-account=cloud-run-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com` so Cloud Run uses your project's runtime service account without hardcoding your Project ID.
+
+- **For `GCP_WIF_PROVIDER` & `GCP_SERVICE_ACCOUNT`**: Configure [Workload Identity Federation with GitHub Actions](https://github.com/google-github-actions/auth#workload-identity-federation) and grant the deployment service account (`GCP_SERVICE_ACCOUNT`) the roles `roles/run.admin`, `roles/artifactregistry.writer`, and `roles/iam.serviceAccountUser`.
+
+#### 4. SonarCloud Setup (`SONAR_TOKEN`, `SONAR_PROJECT_KEY`, `SONAR_ORGANIZATION_KEY`)
+1. Log in to [SonarCloud](https://sonarcloud.io/) with your GitHub account and import your repository.
+2. Go to **Information** (bottom-left of your project dashboard) to copy **`SONAR_PROJECT_KEY`** and **`SONAR_ORGANIZATION_KEY`**.
+3. Go to **My Account** (top-right avatar) $\rightarrow$ **Security** $\rightarrow$ **Generate Tokens** to create **`SONAR_TOKEN`**.
+
+#### 5. Register All Secrets in GitHub Actions
+In your GitHub repository, navigate to **Settings** $\rightarrow$ **Secrets and variables** $\rightarrow$ **Actions** $\rightarrow$ **New repository secret**, and add all 12 secrets listed in [Table 4.A](#a-complete-secrets-reference-table).
 
 ---
 
@@ -165,8 +249,8 @@ openssl rand -base64 64 | tr -d '\n'
    docker compose up -d postgres pubsub-emulator
    ```
 
-2. **Database Migrations (Automatic via Flyway)**:
-   > **Note:** You do **not** need to create any tables or indexes manually. **Flyway** (`spring.flyway.enabled: true`) automatically executes [`src/main/resources/db/migration/V1__init_users_table.sql`](src/main/resources/db/migration/V1__init_users_table.sql) when Spring Boot starts up, creating the `users` table and `idx_users_email` index if they do not exist.
+2. **Database Migrations (Automatic via Flyway + Neon PgBouncer Compatibility)**:
+   > **Note:** You do **not** need to create any tables or indexes manually. **Flyway** (`spring.flyway.enabled: true`) automatically executes [`src/main/resources/db/migration/V1__init_users_table.sql`](src/main/resources/db/migration/V1__init_users_table.sql) when Spring Boot starts up, creating the `users` table and `idx_users_email` index if they do not exist. Additionally, [`application-dev.yml`](src/main/resources/application-dev.yml) configures `spring.flyway.postgresql.transactional-lock: false` so Flyway migrations work seamlessly with **Neon Serverless PgBouncer (`-pooler`)** in transaction-pooling mode without session-level advisory lock conflicts across scaling Cloud Run instances.
 
 3. **Run the Microservice with the `dev` Profile and Environment Variables in PowerShell**:
    ```powershell
